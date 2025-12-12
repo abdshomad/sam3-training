@@ -67,18 +67,18 @@ PLAN
 
 **4.1 - Construct Local Training Command**
 *   **Description:** detailed logic to build the command: `python sam3/train/train.py -c [CONFIG] --use-cluster 0 --num-gpus [N]` when in local mode.
-*   **Status:** Pending
-*   **Implementation Datetime:** TBD
+*   **Status:** Script Created
+*   **Implementation Datetime:** 2025-12-12 23:00:03
 
 **4.2 - Construct Cluster Training Command**
 *   **Description:** detailed logic to build the command: `python sam3/train/train.py -c [CONFIG] --use-cluster 1 --partition [PARTITION] ...` when in cluster mode.
-*   **Status:** Pending
-*   **Implementation Datetime:** TBD
+*   **Status:** Script Created
+*   **Implementation Datetime:** 2025-12-12 23:00:03
 
 **4.3 - Job Array Configuration (Optional)**
 *   **Description:** Add logic to handle job arrays for dataset sweeps if the config matches `roboflow` or `odinw` specific structures, enabling `submitit.job_array` parameters.
-*   **Status:** Pending
-*   **Implementation Datetime:** TBD
+*   **Status:** Script Created
+*   **Implementation Datetime:** 2025-12-12 23:00:03
 
 **5.0 - Post-Execution and Monitoring**
 *   **Description:** Handle output feedback and monitoring tools setup.
