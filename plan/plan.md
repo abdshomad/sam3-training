@@ -32,18 +32,18 @@ PLAN
 
 **2.3 - Config File Existence Check**
 *   **Description:** Verify that the requested YAML configuration file (passed via `-c`) actually exists in `sam3/train/configs/`.
-*   **Status:** Pending
-*   **Implementation Datetime:** TBD
+*   **Status:** Script Created
+*   **Implementation Datetime:** 2025-12-12 22:09:29
 
 **3.0 - Script Argument Parsing**
 *   **Description:** Create a wrapper interface to handle the various command-line arguments supported by `sam3/train/train.py`.
-*   **Status:** Pending
-*   **Implementation Datetime:** TBD
+*   **Status:** Script Created
+*   **Implementation Datetime:** 2025-12-12 22:09:29
 
 **3.1 - Implement Mode Selection (Local vs. Cluster)**
 *   **Description:** Parse a flag (e.g., `--mode local|cluster`) that maps to the `--use-cluster 0` or `--use-cluster 1` arguments in the python script.
-*   **Status:** Pending
-*   **Implementation Datetime:** TBD
+*   **Status:** Script Created
+*   **Implementation Datetime:** 2025-12-12 22:09:29
 
 **3.2 - Implement Resource Allocation Flags**
 *   **Description:** Add support for parsing `--num-gpus`, `--num-nodes`, `--partition`, `--account`, and `--qos` arguments to pass through to the training script.
