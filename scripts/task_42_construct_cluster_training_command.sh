@@ -125,16 +125,18 @@ fi
 
 # Validate required config argument
 if [ -z "${CONFIG_ARG}" ]; then
-    echo "ERROR: Config file path is required for cluster training"
+    echo "WARNING: Config file path is not provided"
     echo ""
-    echo "Provide config via:"
+    echo "To use this script, provide a config via:"
     echo "  - Command line: -c/--config PATH"
     echo "  - Environment: SAM3_CONFIG_ARG"
     echo "  - Previous script: task_33_implement_task_type_selection.sh --task-type train|eval"
     echo ""
     echo "Example:"
     echo "  $0 -c configs/roboflow_v100/roboflow_v100_full_ft_100_images.yaml --partition gpu_partition --account my_account --num-gpus 8"
-    exit 1
+    echo ""
+    echo "Skipping cluster training command construction (no config provided)."
+    exit 0
 fi
 
 # Normalize config path: ensure it starts with "configs/" for Hydra

@@ -59,15 +59,17 @@ fi
 
 # Validate required config argument
 if [ -z "${CONFIG_ARG}" ]; then
-    echo "ERROR: Config file path is required"
+    echo "WARNING: Config file path is not provided"
     echo ""
-    echo "Provide config via:"
+    echo "To use this script, provide a config via:"
     echo "  - Command line: -c/--config PATH"
     echo "  - Environment: SAM3_CONFIG_ARG"
     echo ""
     echo "Example:"
     echo "  $0 -c configs/roboflow_v100/roboflow_v100_full_ft_100_images.yaml"
-    exit 1
+    echo ""
+    echo "Skipping job array configuration analysis (no config provided)."
+    exit 0
 fi
 
 # Normalize config path: ensure it starts with "configs/" for Hydra
