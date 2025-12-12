@@ -1,3 +1,6 @@
 [submodule "sam3"]
 	path = sam3
 	url = https://github.com/facebookresearch/sam3.git
+[submodule "rf100-vl"]
+	path = rf100-vl
+	url = https://github.com/roboflow/rf100-vl.git

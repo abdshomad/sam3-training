@@ -1,12 +1,12 @@
 #!/bin/bash
-# Task ID: 2.3
+# Task ID: 2.4
 # Description: Config File Existence Check
 # Created: 2025-12-12
 
 set -e
 
 echo "=========================================="
-echo "Task 2.3: Config File Existence Check"
+echo "Task 2.4: Config File Existence Check"
 echo "=========================================="
 
 # Get the script directory and project root

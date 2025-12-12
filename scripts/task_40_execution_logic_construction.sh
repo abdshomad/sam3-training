@@ -126,12 +126,18 @@ fi
 
 # Validate required config argument
 if [ -z "${CONFIG_ARG}" ]; then
-    echo "ERROR: Config file path is required"
-    echo "Provide via:"
+    echo "WARNING: Config file path is not provided"
+    echo ""
+    echo "To use this script, provide a config via:"
     echo "  - Command line: -c/--config PATH"
     echo "  - Environment: SAM3_CONFIG_ARG"
     echo "  - Previous script: task_33_implement_task_type_selection.sh --task-type train|eval"
-    exit 1
+    echo ""
+    echo "Example:"
+    echo "  $0 -c configs/roboflow_v100/roboflow_v100_full_ft_100_images-copy.yaml --use-cluster 0 --num-gpus 2"
+    echo ""
+    echo "Skipping command construction (no config provided)."
+    exit 0
 fi
 
 # Normalize config path: ensure it starts with "configs/" for Hydra
@@ -141,18 +147,14 @@ if [[ ! "${CONFIG_ARG}" =~ ^configs/ ]]; then
     echo "Normalized config path to: ${CONFIG_ARG}"
 fi
 
-# Validate config file exists (check both possible locations)
-CONFIG_PATH_REL="${PROJECT_ROOT}/sam3/sam3/train/${CONFIG_ARG}"
-CONFIG_PATH_ABS="${PROJECT_ROOT}/sam3/sam3/train/configs/${CONFIG_ARG#configs/}"
+# Validate config file exists
+# After normalization, CONFIG_ARG always starts with "configs/"
+CONFIG_PATH="${PROJECT_ROOT}/sam3/sam3/train/${CONFIG_ARG}"
 
-if [ -f "${CONFIG_PATH_REL}" ]; then
-    CONFIG_PATH="${CONFIG_PATH_REL}"
-elif [ -f "${CONFIG_PATH_ABS}" ]; then
-    CONFIG_PATH="${CONFIG_PATH_ABS}"
-else
-    echo "WARNING: Config file not found at: ${CONFIG_PATH_REL}"
-    echo "WARNING: Config file not found at: ${CONFIG_PATH_ABS}"
+if [ ! -f "${CONFIG_PATH}" ]; then
+    echo "WARNING: Config file not found at: ${CONFIG_PATH}"
     echo "The command will be constructed, but may fail at runtime"
+    echo "Expected location: ${CONFIG_PATH}"
 fi
 
 # Build the command

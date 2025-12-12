@@ -1,12 +1,12 @@
 #!/bin/bash
-# Task ID: 2.2
+# Task ID: 2.3
 # Description: Validate Data Directory Structure
 # Created: 2025-12-12
 
 set -e
 
 echo "=========================================="
-echo "Task 2.2: Validate Data Directory Structure"
+echo "Task 2.3: Validate Data Directory Structure"
 echo "=========================================="
 
 # Get the script directory and project root

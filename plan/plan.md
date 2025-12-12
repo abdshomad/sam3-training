@@ -25,12 +25,17 @@ PLAN
 *   **Status:** Script Created
 *   **Implementation Datetime:** 2025-12-12 22:06:58
 
-**2.2 - Validate Data Directory Structure**
+**2.2 - Download Roboflow Dataset**
+*   **Description:** Download the Roboflow 100-VL dataset using the rf100-vl submodule. Check for API key, install rf100vl package if needed, and download datasets to the specified directory.
+*   **Status:** Script Created
+*   **Implementation Datetime:** 2025-12-12 22:46:18
+
+**2.3 - Validate Data Directory Structure**
 *   **Description:** specific checks for the folder hierarchy mentioned in the README (e.g., verify `AerialMaritimeDrone/large/train` exists for ODinW or `13-lkc01/train` for Roboflow) to prevent runtime errors.
 *   **Status:** Script Created
 *   **Implementation Datetime:** 2025-12-12 22:06:58
 
-**2.3 - Config File Existence Check**
+**2.4 - Config File Existence Check**
 *   **Description:** Verify that the requested YAML configuration file (passed via `-c`) actually exists in `sam3/train/configs/`.
 *   **Status:** Script Created
 *   **Implementation Datetime:** 2025-12-12 22:09:29

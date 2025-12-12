@@ -47,7 +47,8 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "This script orchestrates:"
             echo "  - Task 2.1: Define Data Root Variables"
-            echo "  - Task 2.2: Validate Data Directory Structure"
+            echo "  - Task 2.2: Download Roboflow Dataset"
+            echo "  - Task 2.3: Validate Data Directory Structure"
             exit 0
             ;;
         *)
@@ -61,7 +62,8 @@ done
 echo ""
 echo "This script will:"
 echo "  1. Define data root variables (Task 2.1)"
-echo "  2. Validate data directory structure (Task 2.2)"
+echo "  2. Download Roboflow dataset (Task 2.2)"
+echo "  3. Validate data directory structure (Task 2.3)"
 echo ""
 
 # Step 1: Define Data Root Variables (Task 2.1)
@@ -82,11 +84,26 @@ fi
 
 echo ""
 
-# Step 2: Validate Data Directory Structure (Task 2.2)
-echo "Step 2: Validating data directory structure..."
+# Step 2: Download Roboflow Dataset (Task 2.2)
+if [ -f "${SCRIPT_DIR}/task_22_download_roboflow_dataset.sh" ]; then
+    echo ""
+    echo "Running Task 2.2: Download Roboflow Dataset..."
+    # Download script doesn't need validation args, it uses environment variables or default path
+    "${SCRIPT_DIR}/task_22_download_roboflow_dataset.sh" || {
+        DOWNLOAD_EXIT_CODE=$?
+        if [ ${DOWNLOAD_EXIT_CODE} -ne 0 ]; then
+            echo "WARNING: Dataset download failed or skipped (exit code: ${DOWNLOAD_EXIT_CODE})"
+            echo "This is expected if ROBOFLOW_API_KEY is not set or dataset already exists"
+        fi
+    }
+fi
+
+# Step 3: Validate Data Directory Structure (Task 2.3)
+echo ""
+echo "Step 3: Validating data directory structure..."
 VALIDATION_ARGS=(--dataset-type "${DATASET_TYPE}")
 
-"${SCRIPT_DIR}/task_22_validate_data_directory_structure.sh" "${VALIDATION_ARGS[@]}"
+"${SCRIPT_DIR}/task_23_validate_data_directory_structure.sh" "${VALIDATION_ARGS[@]}"
 if [ $? -ne 0 ]; then
     echo "ERROR: Data directory structure validation failed"
     exit 1
