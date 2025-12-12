@@ -51,18 +51,33 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Validate that config argument was provided
-if [ -z "${CONFIG_ARG}" ]; then
-    echo "ERROR: Config file path is required"
-    echo "Use -c or --config to specify the config file"
-    echo "Use --help for usage information"
-    exit 1
-fi
-
 # Validate configs directory exists
 if [ ! -d "${CONFIGS_DIR}" ]; then
     echo "ERROR: Configs directory does not exist: ${CONFIGS_DIR}"
     exit 1
+fi
+
+# If no config argument provided, list available configs and exit successfully
+if [ -z "${CONFIG_ARG}" ]; then
+    echo ""
+    echo "No config file specified. Listing available config files:"
+    echo ""
+    
+    # List available configs
+    CONFIG_COUNT=0
+    find "${CONFIGS_DIR}" -name "*.yaml" -type f | sort | while read -r file; do
+        RELATIVE_PATH="${file#${CONFIGS_DIR}/}"
+        echo "  - ${RELATIVE_PATH}"
+        CONFIG_COUNT=$((CONFIG_COUNT + 1))
+    done
+    
+    echo ""
+    echo "Use -c or --config to validate a specific config file."
+    echo "Example: $0 -c configs/roboflow_v100/roboflow_v100_full_ft_100_images.yaml"
+    echo ""
+    echo "Config file listing completed successfully!"
+    echo ""
+    exit 0
 fi
 
 # Normalize config path

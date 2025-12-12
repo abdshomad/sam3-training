@@ -59,8 +59,8 @@ while [[ $# -gt 0 ]]; do
         --help|-h)
             echo "Usage: $0 [OPTIONS]"
             echo ""
-            echo "Required Options:"
-            echo "  -c, --config PATH         Config file path (required)"
+            echo "Options:"
+            echo "  -c, --config PATH         Config file path (optional)"
             echo "                            Examples:"
             echo "                              configs/roboflow_v100/roboflow_v100_full_ft_100_images.yaml"
             echo "                              roboflow_v100/roboflow_v100_full_ft_100_images.yaml"
@@ -85,13 +85,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Validate required config argument
-if [ -z "${CONFIG_ARG}" ]; then
-    echo "ERROR: Config file path is required"
-    echo "Use -c or --config to specify the config file"
-    echo "Use --help for usage information"
-    exit 1
-fi
+# Config argument is optional - script can run without it
+# (useful for testing argument parsing logic)
 
 # Validate --use-cluster if provided
 if [ -n "${USE_CLUSTER}" ]; then
@@ -136,7 +131,11 @@ fi
 
 echo ""
 echo "Parsed arguments:"
-echo "  Config: ${CONFIG_ARG}"
+if [ -n "${CONFIG_ARG}" ]; then
+    echo "  Config: ${CONFIG_ARG}"
+else
+    echo "  Config: Not specified"
+fi
 if [ -n "${USE_CLUSTER}" ]; then
     if [ "${USE_CLUSTER}" = "0" ]; then
         echo "  Use Cluster: No (local mode)"

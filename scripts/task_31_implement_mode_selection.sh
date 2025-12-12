@@ -31,7 +31,7 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  --mode MODE           Execution mode: 'local' or 'cluster' (required)"
+            echo "  --mode MODE           Execution mode: 'local' or 'cluster' (optional, default: 'local')"
             echo "                         - 'local': Run training locally (maps to --use-cluster 0)"
             echo "                         - 'cluster': Run training on cluster (maps to --use-cluster 1)"
             echo "  -h, --help            Show this help message"
@@ -48,12 +48,10 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Validate that mode argument was provided
+# Default to "local" if mode not provided
 if [ -z "${MODE}" ]; then
-    echo "ERROR: Mode is required"
-    echo "Use --mode to specify 'local' or 'cluster'"
-    echo "Use --help for usage information"
-    exit 1
+    MODE="local"
+    echo "No mode specified, defaulting to 'local'"
 fi
 
 # Normalize mode to lowercase
