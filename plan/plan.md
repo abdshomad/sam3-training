@@ -47,18 +47,18 @@ PLAN
 
 **3.2 - Implement Resource Allocation Flags**
 *   **Description:** Add support for parsing `--num-gpus`, `--num-nodes`, `--partition`, `--account`, and `--qos` arguments to pass through to the training script.
-*   **Status:** Pending
-*   **Implementation Datetime:** TBD
+*   **Status:** Script Created
+*   **Implementation Datetime:** 2025-12-12 22:21:15
 
 **3.3 - Implement Task Type Selection (Train vs. Eval)**
 *   **Description:** Allow a simple flag to switch between training configurations (e.g., `roboflow_v100_full_ft_100_images.yaml`) and evaluation configurations (e.g., `roboflow_v100_eval.yaml`).
-*   **Status:** Pending
-*   **Implementation Datetime:** TBD
+*   **Status:** Script Created
+*   **Implementation Datetime:** 2025-12-12 22:21:15
 
 **4.0 - Execution Logic Construction**
 *   **Description:** Dynamically build and execute the final Python command based on the parsed arguments.
-*   **Status:** Pending
-*   **Implementation Datetime:** TBD
+*   **Status:** Script Created
+*   **Implementation Datetime:** 2025-12-12 22:21:15
 
 **4.1 - Construct Local Training Command**
 *   **Description:** detailed logic to build the command: `python sam3/train/train.py -c [CONFIG] --use-cluster 0 --num-gpus [N]` when in local mode.
