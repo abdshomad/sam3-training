@@ -21,17 +21,60 @@ echo ""
 
 # Step 1: Setup virtual environment using uv
 echo "Step 1: Setting up virtual environment..."
-if [ ! -d ".venv" ]; then
-    echo "Creating virtual environment using uv..."
-    if ! command -v uv &> /dev/null; then
-        echo "ERROR: uv not found. Please install uv first."
-        echo "Installation: curl -LsSf https://astral.sh/uv/install.sh | sh"
-        exit 1
+if ! command -v uv &> /dev/null; then
+    echo "ERROR: uv not found. Please install uv first."
+    echo "Installation: curl -LsSf https://astral.sh/uv/install.sh | sh"
+    exit 1
+fi
+
+# SAM3 supports Python 3.8-3.12, prefer 3.12 (latest supported)
+TARGET_PYTHON_VERSION="3.12"
+echo "Target Python version for SAM3: ${TARGET_PYTHON_VERSION}"
+
+# Check if venv exists and verify its Python version
+VENV_NEEDS_RECREATE=false
+if [ -d ".venv" ]; then
+    echo "Virtual environment already exists, checking Python version..."
+    if [ -f ".venv/bin/python" ]; then
+        VENV_PYTHON_VERSION=$(.venv/bin/python --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
+        echo "Existing venv Python version: ${VENV_PYTHON_VERSION}"
+        if [ "${VENV_PYTHON_VERSION}" != "${TARGET_PYTHON_VERSION}" ]; then
+            echo "Python version mismatch. Will recreate venv with Python ${TARGET_PYTHON_VERSION}..."
+            VENV_NEEDS_RECREATE=true
+        else
+            echo "✓ Existing venv has correct Python version"
+        fi
+    else
+        echo "Existing venv appears corrupted, will recreate..."
+        VENV_NEEDS_RECREATE=true
     fi
-    uv venv
-    echo "✓ Virtual environment created"
 else
-    echo "✓ Virtual environment already exists"
+    echo "No virtual environment found, will create one..."
+    VENV_NEEDS_RECREATE=true
+fi
+
+# Create or recreate venv if needed
+if [ "$VENV_NEEDS_RECREATE" = true ]; then
+    # Remove existing venv if recreating
+    if [ -d ".venv" ]; then
+        echo "Removing existing virtual environment..."
+        rm -rf .venv
+    fi
+    
+    echo "Installing Python ${TARGET_PYTHON_VERSION} using uv..."
+    uv python install "${TARGET_PYTHON_VERSION}" || {
+        echo "WARNING: Failed to install Python ${TARGET_PYTHON_VERSION} via uv"
+        echo "Attempting to create venv with available Python version..."
+    }
+    
+    echo "Creating virtual environment with Python ${TARGET_PYTHON_VERSION}..."
+    if uv python list 2>/dev/null | grep -q "${TARGET_PYTHON_VERSION}" || uv python install "${TARGET_PYTHON_VERSION}" 2>/dev/null; then
+        uv venv --python "${TARGET_PYTHON_VERSION}"
+    else
+        echo "Python ${TARGET_PYTHON_VERSION} not available, using default Python..."
+        uv venv
+    fi
+    echo "✓ Virtual environment created"
 fi
 
 # Activate virtual environment
@@ -39,6 +82,13 @@ if [ -f ".venv/bin/activate" ]; then
     echo "Activating virtual environment..."
     source .venv/bin/activate
     echo "✓ Virtual environment activated"
+    
+    # Ensure pip is installed in the venv
+    if [ ! -f ".venv/bin/pip" ]; then
+        echo "Installing pip in virtual environment..."
+        python -m ensurepip --upgrade || python -m pip install --upgrade pip
+        echo "✓ Pip installed in virtual environment"
+    fi
 else
     echo "ERROR: Failed to activate virtual environment"
     exit 1
