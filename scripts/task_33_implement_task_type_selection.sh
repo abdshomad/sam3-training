@@ -111,16 +111,16 @@ elif [ -n "${TASK_TYPE}" ]; then
             echo "Training configurations:"
             # Find training configs
             if [ -f "${CONFIGS_DIR}/roboflow_v100/roboflow_v100_full_ft_100_images.yaml" ]; then
-                echo "  - roboflow_v100/roboflow_v100_full_ft_100_images.yaml"
-                CONFIG_SUGGESTION="roboflow_v100/roboflow_v100_full_ft_100_images.yaml"
+                echo "  - configs/roboflow_v100/roboflow_v100_full_ft_100_images.yaml"
+                CONFIG_SUGGESTION="configs/roboflow_v100/roboflow_v100_full_ft_100_images.yaml"
             fi
             if [ -d "${CONFIGS_DIR}/odinw13" ]; then
                 for config in "${CONFIGS_DIR}/odinw13"/*_train.yaml; do
                     if [ -f "${config}" ]; then
                         config_name=$(basename "${config}")
-                        echo "  - odinw13/${config_name}"
+                        echo "  - configs/odinw13/${config_name}"
                         if [ -z "${CONFIG_SUGGESTION}" ]; then
-                            CONFIG_SUGGESTION="odinw13/${config_name}"
+                            CONFIG_SUGGESTION="configs/odinw13/${config_name}"
                         fi
                     fi
                 done
@@ -129,17 +129,17 @@ elif [ -n "${TASK_TYPE}" ]; then
             echo "Evaluation configurations:"
             # Find eval configs
             if [ -f "${CONFIGS_DIR}/roboflow_v100/roboflow_v100_eval.yaml" ]; then
-                echo "  - roboflow_v100/roboflow_v100_eval.yaml"
-                CONFIG_SUGGESTION="roboflow_v100/roboflow_v100_eval.yaml"
+                echo "  - configs/roboflow_v100/roboflow_v100_eval.yaml"
+                CONFIG_SUGGESTION="configs/roboflow_v100/roboflow_v100_eval.yaml"
             fi
             if [ -d "${CONFIGS_DIR}/gold_image_evals" ]; then
-                echo "  - gold_image_evals/*.yaml (multiple available)"
+                echo "  - configs/gold_image_evals/*.yaml (multiple available)"
             fi
             if [ -d "${CONFIGS_DIR}/silver_image_evals" ]; then
-                echo "  - silver_image_evals/*.yaml (multiple available)"
+                echo "  - configs/silver_image_evals/*.yaml (multiple available)"
             fi
             if [ -d "${CONFIGS_DIR}/saco_video_evals" ]; then
-                echo "  - saco_video_evals/*.yaml (multiple available)"
+                echo "  - configs/saco_video_evals/*.yaml (multiple available)"
             fi
         fi
         

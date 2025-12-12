@@ -17,7 +17,7 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "${PROJECT_ROOT}"
 
 # Initialize command components
-BASE_CMD="python sam3/sam3/train/train.py"
+BASE_CMD="python -m sam3.train.train"
 CONFIG_ARG=""
 USE_CLUSTER=""
 NUM_GPUS=""
@@ -134,10 +134,24 @@ if [ -z "${CONFIG_ARG}" ]; then
     exit 1
 fi
 
-# Validate config file exists
-CONFIG_PATH="${PROJECT_ROOT}/sam3/sam3/train/configs/${CONFIG_ARG}"
-if [ ! -f "${CONFIG_PATH}" ]; then
-    echo "WARNING: Config file not found: ${CONFIG_PATH}"
+# Normalize config path: ensure it starts with "configs/" for Hydra
+# Hydra expects configs relative to the sam3.train package configs directory
+if [[ ! "${CONFIG_ARG}" =~ ^configs/ ]]; then
+    CONFIG_ARG="configs/${CONFIG_ARG}"
+    echo "Normalized config path to: ${CONFIG_ARG}"
+fi
+
+# Validate config file exists (check both possible locations)
+CONFIG_PATH_REL="${PROJECT_ROOT}/sam3/sam3/train/${CONFIG_ARG}"
+CONFIG_PATH_ABS="${PROJECT_ROOT}/sam3/sam3/train/configs/${CONFIG_ARG#configs/}"
+
+if [ -f "${CONFIG_PATH_REL}" ]; then
+    CONFIG_PATH="${CONFIG_PATH_REL}"
+elif [ -f "${CONFIG_PATH_ABS}" ]; then
+    CONFIG_PATH="${CONFIG_PATH_ABS}"
+else
+    echo "WARNING: Config file not found at: ${CONFIG_PATH_REL}"
+    echo "WARNING: Config file not found at: ${CONFIG_PATH_ABS}"
     echo "The command will be constructed, but may fail at runtime"
 fi
 

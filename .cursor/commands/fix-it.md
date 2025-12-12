@@ -1,0 +1,1 @@
+fix it. think deeply for each faield script 3 best solutions. try one by one. if succeeded. continue to next. if not, think another 3 best solutions untill succeeded. 
