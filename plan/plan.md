@@ -82,15 +82,15 @@ PLAN
 
 **5.0 - Post-Execution and Monitoring**
 *   **Description:** Handle output feedback and monitoring tools setup.
-*   **Status:** Pending
-*   **Implementation Datetime:** TBD
+*   **Status:** Script Created
+*   **Implementation Datetime:** 2025-12-12 23:15:48
 
 **5.1 - Log Directory Feedback**
 *   **Description:** After script launch, parse the output or config to print the location of `experiment_log_dir` so the user knows where `config_resolved.yaml` and checkpoints are saved.
-*   **Status:** Pending
-*   **Implementation Datetime:** TBD
+*   **Status:** Script Created
+*   **Implementation Datetime:** 2025-12-12 23:15:48
 
 **5.2 - Tensorboard Launch Helper**
 *   **Description:** Add a helper function or prompt at the end of the script suggesting the command `tensorboard --logdir [experiment_log_dir]/tensorboard`.
-*   **Status:** Pending
-*   **Implementation Datetime:** TBD
+*   **Status:** Script Created
+*   **Implementation Datetime:** 2025-12-12 23:15:48
