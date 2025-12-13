@@ -2,3 +2,9 @@ experiments/**
 data/**
 .env
 .env.odinw
+sam3_logs/**
+# Web app runtime files
+*.pid
+*.log
+screenshots/**
+*.pyc

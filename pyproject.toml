@@ -38,6 +38,12 @@ dependencies = [
     
     # Optional but commonly used
     "wandb",  # For experiment tracking (optional but referenced in trainer)
+    
+    # Web application dependencies
+    "fastapi",
+    "uvicorn[standard]",
+    "websockets",
+    "python-multipart",
 ]
 
 [project.optional-dependencies]
