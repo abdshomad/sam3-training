@@ -1,12 +1,12 @@
 #!/bin/bash
-# Task ID: 2.3
-# Description: Validate Data Directory Structure
+# Task ID: 2.4
+# Description: Validate Data Directory Structure - Validates both rf100vl and ODinW datasets
 # Created: 2025-12-12
 
 set -e
 
 echo "=========================================="
-echo "Task 2.3: Validate Data Directory Structure"
+echo "Task 2.4: Validate Data Directory Structure"
 echo "=========================================="
 
 # Get the script directory and project root
@@ -36,6 +36,10 @@ while [[ $# -gt 0 ]]; do
             echo "Environment Variables (from task 2.1):"
             echo "  ROBOFLOW_VL_100_ROOT   Path to Roboflow VL-100 dataset root"
             echo "  ODINW_DATA_ROOT         Path to ODinW dataset root"
+            echo ""
+            echo "This script validates both rf100vl and ODinW datasets:"
+            echo "  - rf100vl: Checks for dataset directories, train/valid/test splits, and annotation files"
+            echo "  - ODinW: Checks for supercategory directories, proper structure, and annotation files"
             exit 0
             ;;
         *)
@@ -54,6 +58,11 @@ if [[ ! "${DATASET_TYPE}" =~ ^(roboflow|odinw|both)$ ]]; then
 fi
 
 VALIDATION_FAILED=0
+
+# This script validates both rf100vl and ODinW datasets:
+# - rf100vl validation: Checks for dataset directories, train/valid/test splits, and annotation files
+# - ODinW validation: Checks for supercategory directories, proper structure, and annotation files
+# Validation can be performed for one or both datasets based on --dataset-type parameter
 
 # Function to validate Roboflow directory structure
 validate_roboflow_structure() {
@@ -253,13 +262,16 @@ validate_odinw_structure() {
 }
 
 # Perform validation based on dataset type
+# Validates both rf100vl and ODinW datasets when dataset-type is "both"
 if [ "${DATASET_TYPE}" = "roboflow" ] || [ "${DATASET_TYPE}" = "both" ]; then
+    echo "Validating rf100vl dataset structure..."
     if ! validate_roboflow_structure; then
         VALIDATION_FAILED=1
     fi
 fi
 
 if [ "${DATASET_TYPE}" = "odinw" ] || [ "${DATASET_TYPE}" = "both" ]; then
+    echo "Validating ODinW dataset structure..."
     if ! validate_odinw_structure; then
         VALIDATION_FAILED=1
     fi
@@ -269,6 +281,9 @@ echo ""
 if [ ${VALIDATION_FAILED} -eq 0 ]; then
     echo "=========================================="
     echo "Data directory structure validation completed successfully!"
+    if [ "${DATASET_TYPE}" = "both" ]; then
+        echo "Both rf100vl and ODinW datasets validated successfully!"
+    fi
     echo "=========================================="
     echo ""
     exit 0

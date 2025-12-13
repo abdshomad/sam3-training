@@ -4,3 +4,6 @@
 [submodule "rf100-vl"]
 	path = rf100-vl
 	url = https://github.com/roboflow/rf100-vl.git
+[submodule "glip"]
+	path = glip
+	url = https://github.com/microsoft/GLIP.git

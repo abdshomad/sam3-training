@@ -113,7 +113,7 @@ if [[ ! "${CONFIG_ARG}" =~ ^configs/ ]]; then
     echo "Normalized config path to: ${CONFIG_ARG}"
 fi
 
-# Validate config file exists (reuse logic from task 2.4)
+# Validate config file exists (reuse logic from task 2.5)
 CONFIG_PATH="${PROJECT_ROOT}/sam3/sam3/train/${CONFIG_ARG}"
 
 if [ ! -f "${CONFIG_PATH}" ]; then

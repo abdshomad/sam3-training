@@ -303,7 +303,7 @@ Launch TensorBoard in a separate terminal to monitor training progress.
 **Problem:** Config file validation fails
 
 **Solutions:**
-- List available configs: `bash scripts/task_24_config_file_existence_check.sh`
+- List available configs: `bash scripts/task_25_config_file_existence_check.sh`
 - Use correct path format: `configs/roboflow_v100/roboflow_v100_full_ft_100_images.yaml`
 - Check config exists in: `sam3/sam3/train/configs/`
 
@@ -349,7 +349,7 @@ The master script orchestrates these individual task scripts:
 
 - `task_10_environment_preparation.sh` - Environment setup
 - `task_20_data_validation_and_configuration.sh` - Data validation
-- `task_24_config_file_existence_check.sh` - Config validation
+- `task_25_config_file_existence_check.sh` - Config validation
 - `task_30_script_argument_parsing.sh` - Argument parsing
 - `task_40_execution_logic_construction.sh` - Command construction
 - `task_50_post_execution_and_monitoring.sh` - Post-execution monitoring

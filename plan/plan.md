@@ -26,16 +26,21 @@ PLAN
 *   **Implementation Datetime:** 2025-12-12 22:06:58
 
 **2.2 - Download Roboflow Dataset**
-*   **Description:** Download the Roboflow 100-VL dataset using the rf100-vl submodule. Check for API key, install rf100vl package if needed, and download datasets to the specified directory.
+*   **Description:** Execute download of the Roboflow 100-VL dataset using the rf100-vl submodule. Check for API key, install rf100vl package if needed, and download datasets to the specified directory.
 *   **Status:** Script Created
 *   **Implementation Datetime:** 2025-12-12 22:46:18
 
-**2.3 - Validate Data Directory Structure**
-*   **Description:** specific checks for the folder hierarchy mentioned in the README (e.g., verify `AerialMaritimeDrone/large/train` exists for ODinW or `13-lkc01/train` for Roboflow) to prevent runtime errors.
+**2.3 - Download ODinW Dataset**
+*   **Description:** Download ODinW datasets using GLIP repository's download script from the GLIP submodule. Check for GLIP submodule initialization, use GLIP's odinw/download_datasets.py script, and download datasets to the specified directory.
+*   **Status:** Pending
+*   **Implementation Datetime:** TBD
+
+**2.4 - Validate Data Directory Structure**
+*   **Description:** Validate both rf100vl and ODinW datasets. Perform specific checks for the folder hierarchy mentioned in the README (e.g., verify `AerialMaritimeDrone/large/train` exists for ODinW or `13-lkc01/train` for Roboflow) to ensure both datasets have proper directory structure, train/valid/test splits, and annotation files.
 *   **Status:** Script Created
 *   **Implementation Datetime:** 2025-12-12 22:06:58
 
-**2.4 - Config File Existence Check**
+**2.5 - Config File Existence Check**
 *   **Description:** Verify that the requested YAML configuration file (passed via `-c`) actually exists in `sam3/train/configs/`.
 *   **Status:** Script Created
 *   **Implementation Datetime:** 2025-12-12 22:09:29

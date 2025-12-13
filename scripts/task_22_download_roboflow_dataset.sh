@@ -16,6 +16,30 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # Change to project root
 cd "${PROJECT_ROOT}"
 
+# Activate virtual environment if .venv exists and not already active
+if [ -z "${VIRTUAL_ENV}" ] && [ -f ".venv/bin/activate" ]; then
+    echo "Activating virtual environment..."
+    source .venv/bin/activate
+    echo "✓ Virtual environment activated"
+elif [ -n "${VIRTUAL_ENV}" ]; then
+    echo "✓ Virtual environment already active: ${VIRTUAL_ENV}"
+elif [ ! -f ".venv/bin/activate" ]; then
+    echo "WARNING: .venv not found. Consider running task_10_environment_preparation.sh first"
+    echo "Continuing with system Python..."
+fi
+
+# Load environment variables from .env file if it exists
+if [ -f ".env" ]; then
+    echo "Loading environment variables from .env file..."
+    # Source .env file, but don't fail if it doesn't export ROBOFLOW_API_KEY
+    set +e  # Temporarily disable exit on error for sourcing
+    source .env
+    set -e  # Re-enable exit on error
+    echo "✓ Loaded .env file"
+else
+    echo "Note: .env file not found, using environment variables only"
+fi
+
 # Check if submodule is initialized
 if [ ! -d "rf100-vl/rf100vl" ]; then
     echo "ERROR: rf100-vl submodule not found or not initialized"
@@ -23,14 +47,15 @@ if [ ! -d "rf100-vl/rf100vl" ]; then
     exit 1
 fi
 
-# Check for API key
+# Check for API key (from .env or environment)
 if [ -z "${ROBOFLOW_API_KEY}" ]; then
-    echo "WARNING: ROBOFLOW_API_KEY environment variable is not set"
+    echo "WARNING: ROBOFLOW_API_KEY not found in environment or .env file"
     echo ""
     echo "To get your API key:"
     echo "1. Sign up for a free account at https://universe.roboflow.com/"
     echo "2. Go to your account settings to find your API key"
-    echo "3. Export it: export ROBOFLOW_API_KEY=your_key_here"
+    echo "3. Add it to .env file: ROBOFLOW_API_KEY=your_key_here"
+    echo "   Or export it: export ROBOFLOW_API_KEY=your_key_here"
     echo ""
     echo "Skipping dataset download. You can run this script later with the API key set."
     exit 0
@@ -41,19 +66,47 @@ DOWNLOAD_PATH="${1:-./data/roboflow_vl_100}"
 
 echo ""
 echo "Download configuration:"
-echo "  API Key: ${ROBOFLOW_API_KEY:0:10}... (hidden)"
 echo "  Download path: ${DOWNLOAD_PATH}"
+echo ""
+
+# Check if dataset already exists and has content
+if [ -d "${DOWNLOAD_PATH}" ] && [ -n "$(ls -A "${DOWNLOAD_PATH}" 2>/dev/null)" ]; then
+    echo "✓ Dataset directory already exists and contains data: ${DOWNLOAD_PATH}"
+    echo "  Skipping package installation and download."
+    echo ""
+    echo "Dataset location: ${DOWNLOAD_PATH}"
+    echo ""
+    echo "If you want to re-download, remove the directory first:"
+    echo "  rm -rf ${DOWNLOAD_PATH}"
+    echo ""
+    exit 0
+fi
+
+echo "  API Key: ${ROBOFLOW_API_KEY:0:10}... (hidden)"
 echo ""
 
 # Create download directory
 mkdir -p "${DOWNLOAD_PATH}"
 
 # Install rf100vl package if not already installed
+# Check if package is installed using the active Python (venv or system)
 if ! python -c "import rf100vl" 2>/dev/null; then
-    echo "Installing rf100vl package..."
+    echo "Installing rf100vl package using uv..."
     cd rf100-vl
-    pip install -e .
-    cd ..
+    # Use uv pip install for faster, more reliable package installation
+    # Explicitly use venv's Python if venv exists, otherwise use system Python
+    if [ -f "${PROJECT_ROOT}/.venv/bin/python" ]; then
+        # Use uv pip with explicit Python path to ensure installation into venv
+        uv pip install -p "${PROJECT_ROOT}/.venv/bin/python" -e .
+    else
+        # Fallback to system Python if no venv
+        echo "WARNING: No .venv found, installing to system Python"
+        uv pip install -e .
+    fi
+    cd "${PROJECT_ROOT}"
+    echo "✓ rf100vl package installed"
+else
+    echo "✓ rf100vl package already installed"
 fi
 
 # Download the dataset
@@ -61,6 +114,7 @@ echo "Starting download..."
 echo "This may take a while depending on your internet connection..."
 echo ""
 
+# Use the active Python (from venv if activated, otherwise system)
 python << EOF
 import os
 from rf100vl import download_rf100vl

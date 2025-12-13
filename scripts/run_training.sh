@@ -272,7 +272,7 @@ if [ "${SKIP_CONFIG_VALIDATION}" = false ]; then
     echo "=========================================="
     echo ""
     
-    "${SCRIPT_DIR}/task_24_config_file_existence_check.sh" -c "${CONFIG_ARG}"
+    "${SCRIPT_DIR}/task_25_config_file_existence_check.sh" -c "${CONFIG_ARG}"
     if [ $? -ne 0 ]; then
         echo "ERROR: Config validation failed"
         exit 1
