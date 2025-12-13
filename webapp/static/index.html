@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAM3 Training Web App</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SAM3 Training Web Application</h1>
+            <p>Launch and monitor RF100VL and ODinW training jobs</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" data-tab="rf100vl">RF100VL Training</button>
+            <button class="tab-button" data-tab="odinw">ODinW Training</button>
+            <button class="tab-button" data-tab="jobs">Job Dashboard</button>
+        </div>
+
+        <!-- RF100VL Training Form -->
+        <div id="rf100vl-tab" class="tab-content active">
+            <form id="rf100vl-form" class="training-form">
+                <h2>RF100VL Training Configuration</h2>
+
+                <div class="form-section">
+                    <h3>Basic Settings</h3>
+                    <div class="form-group">
+                        <label for="rf100vl-supercategory">Supercategory:</label>
+                        <select id="rf100vl-supercategory" name="supercategory">
+                            <option value="all">All (Job Array)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rf100vl-mode">Execution Mode:</label>
+                        <select id="rf100vl-mode" name="mode">
+                            <option value="local">Local</option>
+                            <option value="cluster">Cluster</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rf100vl-execution-mode">Job Execution:</label>
+                        <select id="rf100vl-execution-mode" name="execution_mode">
+                            <option value="async">Asynchronous (Background)</option>
+                            <option value="sync">Synchronous (Wait for completion)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Resource Allocation</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="rf100vl-num-gpus">Number of GPUs:</label>
+                            <input type="number" id="rf100vl-num-gpus" name="num_gpus" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="rf100vl-num-nodes">Number of Nodes:</label>
+                            <input type="number" id="rf100vl-num-nodes" name="num_nodes" min="1">
+                        </div>
+                    </div>
+
+                    <div class="form-section cluster-only" id="rf100vl-cluster-settings">
+                        <h4>Cluster Settings (SLURM)</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="rf100vl-partition">Partition:</label>
+                                <input type="text" id="rf100vl-partition" name="partition">
+                            </div>
+                            <div class="form-group">
+                                <label for="rf100vl-account">Account:</label>
+                                <input type="text" id="rf100vl-account" name="account">
+                            </div>
+                            <div class="form-group">
+                                <label for="rf100vl-qos">QOS:</label>
+                                <input type="text" id="rf100vl-qos" name="qos">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Paths</h3>
+                    <div class="form-group">
+                        <label for="rf100vl-roboflow-root">Roboflow Root:</label>
+                        <input type="text" id="rf100vl-roboflow-root" name="roboflow_root" placeholder="Path to Roboflow dataset">
+                    </div>
+                    <div class="form-group">
+                        <label for="rf100vl-experiment-dir">Experiment Directory:</label>
+                        <input type="text" id="rf100vl-experiment-dir" name="experiment_dir" placeholder="Path to experiment logs">
+                    </div>
+                    <div class="form-group">
+                        <label for="rf100vl-bpe-path">BPE Path:</label>
+                        <input type="text" id="rf100vl-bpe-path" name="bpe_path" placeholder="Path to BPE vocabulary">
+                    </div>
+                    <div class="form-group">
+                        <label for="rf100vl-base-config">Base Config:</label>
+                        <input type="text" id="rf100vl-base-config" name="base_config" placeholder="Config file path (optional)">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Advanced Options</h3>
+                    <div class="form-group checkbox-group">
+                        <label><input type="checkbox" id="rf100vl-skip-config-resolution" name="skip_config_resolution"> Skip Config Resolution</label>
+                        <label><input type="checkbox" id="rf100vl-skip-config-validation" name="skip_config_validation"> Skip Config Validation</label>
+                        <label><input type="checkbox" id="rf100vl-skip-env-setup" name="skip_env_setup"> Skip Environment Setup</label>
+                        <label><input type="checkbox" id="rf100vl-skip-data-validation" name="skip_data_validation"> Skip Data Validation</label>
+                        <label><input type="checkbox" id="rf100vl-dry-run" name="dry_run"> Dry Run</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-button">Submit Training Job</button>
+            </form>
+        </div>
+
+        <!-- ODinW Training Form -->
+        <div id="odinw-tab" class="tab-content">
+            <form id="odinw-form" class="training-form">
+                <h2>ODinW Training Configuration</h2>
+
+                <div class="form-section">
+                    <h3>Basic Settings</h3>
+                    <div class="form-group">
+                        <label for="odinw-config-type">Config Type:</label>
+                        <select id="odinw-config-type" name="config_type">
+                            <option value="text_only">Text Only</option>
+                            <option value="text_and_visual">Text and Visual</option>
+                            <option value="visual_only">Visual Only</option>
+                            <option value="text_only_positive">Text Only Positive</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="odinw-mode">Execution Mode:</label>
+                        <select id="odinw-mode" name="mode">
+                            <option value="local">Local</option>
+                            <option value="cluster">Cluster</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="odinw-execution-mode">Job Execution:</label>
+                        <select id="odinw-execution-mode" name="execution_mode">
+                            <option value="async">Asynchronous (Background)</option>
+                            <option value="sync">Synchronous (Wait for completion)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Resource Allocation</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="odinw-num-gpus">Number of GPUs:</label>
+                            <input type="number" id="odinw-num-gpus" name="num_gpus" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="odinw-num-nodes">Number of Nodes:</label>
+                            <input type="number" id="odinw-num-nodes" name="num_nodes" min="1">
+                        </div>
+                    </div>
+
+                    <div class="form-section cluster-only" id="odinw-cluster-settings">
+                        <h4>Cluster Settings (SLURM)</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="odinw-partition">Partition:</label>
+                                <input type="text" id="odinw-partition" name="partition">
+                            </div>
+                            <div class="form-group">
+                                <label for="odinw-account">Account:</label>
+                                <input type="text" id="odinw-account" name="account">
+                            </div>
+                            <div class="form-group">
+                                <label for="odinw-qos">QOS:</label>
+                                <input type="text" id="odinw-qos" name="qos">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Paths</h3>
+                    <div class="form-group">
+                        <label for="odinw-odinw-root">ODinW Root:</label>
+                        <input type="text" id="odinw-odinw-root" name="odinw_root" placeholder="Path to ODinW dataset">
+                    </div>
+                    <div class="form-group">
+                        <label for="odinw-experiment-dir">Experiment Directory:</label>
+                        <input type="text" id="odinw-experiment-dir" name="experiment_dir" placeholder="Path to experiment logs">
+                    </div>
+                    <div class="form-group">
+                        <label for="odinw-bpe-path">BPE Path:</label>
+                        <input type="text" id="odinw-bpe-path" name="bpe_path" placeholder="Path to BPE vocabulary">
+                    </div>
+                    <div class="form-group">
+                        <label for="odinw-base-config">Base Config (overrides config type):</label>
+                        <input type="text" id="odinw-base-config" name="base_config" placeholder="Config file path (optional)">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Advanced Options</h3>
+                    <div class="form-group checkbox-group">
+                        <label><input type="checkbox" id="odinw-skip-config-resolution" name="skip_config_resolution"> Skip Config Resolution</label>
+                        <label><input type="checkbox" id="odinw-skip-config-validation" name="skip_config_validation"> Skip Config Validation</label>
+                        <label><input type="checkbox" id="odinw-skip-env-setup" name="skip_env_setup"> Skip Environment Setup</label>
+                        <label><input type="checkbox" id="odinw-skip-data-validation" name="skip_data_validation"> Skip Data Validation</label>
+                        <label><input type="checkbox" id="odinw-dry-run" name="dry_run"> Dry Run</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-button">Submit Training Job</button>
+            </form>
+        </div>
+
+        <!-- Job Dashboard -->
+        <div id="jobs-tab" class="tab-content">
+            <h2>Job Dashboard</h2>
+            <div class="dashboard-controls">
+                <select id="status-filter">
+                    <option value="">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="running">Running</option>
+                    <option value="completed">Completed</option>
+                    <option value="failed">Failed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                <button id="refresh-jobs" class="refresh-button">Refresh</button>
+            </div>
+            <div id="jobs-table-container">
+                <table id="jobs-table">
+                    <thead>
+                        <tr>
+                            <th>Job ID</th>
+                            <th>Dataset</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="jobs-tbody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Log Viewer Modal -->
+        <div id="log-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="log-modal-title">Job Logs</h3>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div id="log-content" class="log-viewer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Area -->
+        <div id="notifications"></div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
+
