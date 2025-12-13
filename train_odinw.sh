@@ -315,13 +315,60 @@ if [ "${SKIP_CONFIG_VALIDATION}" = false ] && [ "${DRY_RUN}" = false ]; then
             if [ -f "${PROJECT_ROOT}/scripts/task_23_download_odinw_dataset.sh" ]; then
                 echo "ODinW dataset appears to be missing or incomplete."
                 echo ""
-                echo "Quick fix - Download ODinW dataset:"
-                echo "  bash scripts/task_23_download_odinw_dataset.sh"
-                echo ""
-                echo "Or set ODINW_DATA_ROOT environment variable to your dataset location."
-                echo ""
-                echo "Note: You can skip validation with --skip-config-validation,"
-                echo "      but training will likely fail if files are missing."
+                
+                # Offer to download if running interactively
+                if [ -t 0 ] && [ -t 1 ]; then
+                    echo "Would you like to download the ODinW dataset now? (y/n)"
+                    read -r response
+                    if [[ "${response}" =~ ^[Yy]$ ]]; then
+                        echo ""
+                        echo "Downloading ODinW dataset..."
+                        echo "----------------------------------------"
+                        bash "${PROJECT_ROOT}/scripts/task_23_download_odinw_dataset.sh" "${ODINW_ROOT:-${ODINW_DATA_ROOT:-}}"
+                        DOWNLOAD_EXIT_CODE=$?
+                        
+                        if [ ${DOWNLOAD_EXIT_CODE} -eq 0 ]; then
+                            echo ""
+                            echo "✓ Dataset download completed. Re-running validation..."
+                            echo ""
+                            # Re-run validation
+                            uv run python scripts/task_62_config_validation.py "${VALIDATE_ARGS[@]}"
+                            REVALIDATION_EXIT_CODE=$?
+                            if [ ${REVALIDATION_EXIT_CODE} -eq 0 ]; then
+                                echo "✓ Validation passed after dataset download!"
+                                echo ""
+                            else
+                                echo "⚠ Validation still failed after download. Please check the errors above."
+                                exit 1
+                            fi
+                        else
+                            echo ""
+                            echo "ERROR: Dataset download failed (exit code: ${DOWNLOAD_EXIT_CODE})"
+                            echo "Please download the dataset manually or check the errors above."
+                            exit 1
+                        fi
+                    else
+                        echo ""
+                        echo "Skipping download. You can download later using:"
+                        echo "  bash scripts/task_23_download_odinw_dataset.sh"
+                        echo ""
+                        echo "Or set ODINW_DATA_ROOT environment variable to your dataset location."
+                        echo ""
+                        echo "Note: You can skip validation with --skip-config-validation,"
+                        echo "      but training will likely fail if files are missing."
+                        exit 1
+                    fi
+                else
+                    # Non-interactive mode - just show instructions
+                    echo "Quick fix - Download ODinW dataset:"
+                    echo "  bash scripts/task_23_download_odinw_dataset.sh"
+                    echo ""
+                    echo "Or set ODINW_DATA_ROOT environment variable to your dataset location."
+                    echo ""
+                    echo "Note: You can skip validation with --skip-config-validation,"
+                    echo "      but training will likely fail if files are missing."
+                    exit 1
+                fi
             else
                 echo "Common issues:"
                 echo "  - ODinW dataset not downloaded or incomplete"
@@ -332,9 +379,8 @@ if [ "${SKIP_CONFIG_VALIDATION}" = false ] && [ "${DRY_RUN}" = false ]; then
                 echo "  1. Download ODinW dataset (follow GLIP instructions)"
                 echo "  2. Set ODINW_DATA_ROOT to the correct path"
                 echo "  3. Or use --skip-config-validation to proceed anyway (not recommended)"
+                exit 1
             fi
-            echo ""
-            exit 1
         fi
     fi
     echo ""
