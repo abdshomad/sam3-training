@@ -177,13 +177,30 @@ def validate_odinw_dataset_files(config: dict, odinw_root: str) -> tuple[bool, O
                     if idx == 0:
                         first_supercat_missing = True
     
+    # Check if download script exists
+    project_root = Path(odinw_root).parent.parent if Path(odinw_root).parent.name == 'data' else Path(odinw_root).parent
+    download_script = project_root / 'scripts' / 'task_23_download_odinw_dataset.sh'
+    download_hint = ""
+    if download_script.exists():
+        download_hint = f"\n  To download: bash {download_script.relative_to(project_root)}"
+    else:
+        download_hint = "\n  To download: Follow ODinW dataset download instructions"
+    
     # If first supercategory's files are missing, fail validation (training will definitely fail)
     if first_supercat_missing:
-        return False, f"First ODinW supercategory annotation file missing: {missing_files[0]}. Training will fail. Please download ODinW dataset.", missing_files
+        error_msg = (
+            f"First ODinW supercategory annotation file missing: {missing_files[0]}\n"
+            f"  Training will fail without this file.{download_hint}"
+        )
+        return False, error_msg, missing_files
     
     # If no files found at all, fail validation
     if not found_files and missing_files:
-        return False, f"No ODinW annotation files found. First missing: {missing_files[0]}. Please download ODinW dataset.", missing_files
+        error_msg = (
+            f"No ODinW annotation files found. First missing: {missing_files[0]}\n"
+            f"  ODinW dataset appears to be missing or incomplete.{download_hint}"
+        )
+        return False, error_msg, missing_files
     
     # If some files are missing (but not the first), warn but don't fail
     if missing_files:
@@ -411,7 +428,10 @@ def main() -> int:
                 else:
                     print(f"  ✓ {files_msg}")
             else:
-                print(f"  ✗ {files_msg}")
+                # Print multi-line error message properly
+                print(f"  ✗ ODinW dataset files validation failed:")
+                for line in files_msg.split('\n'):
+                    print(f"    {line}")
                 all_valid = False
         else:
             print(f"✗ odinw_data_root: {error}")
