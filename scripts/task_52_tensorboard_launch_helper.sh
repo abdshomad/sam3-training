@@ -108,8 +108,8 @@ else
     echo "⚠ WARNING: TensorBoard not found in PATH or as Python module"
     echo ""
     echo "To install TensorBoard, run:"
-    echo "  pip install tensorboard"
-    echo "  # or"
+    echo "  uv sync  # Install all dependencies from pyproject.toml (includes tensorboard)"
+    echo "  # or if already synced, install via:"
     echo "  uv pip install tensorboard"
     echo ""
     TENSORBOARD_CMD="tensorboard"  # Still show the command, user can install later
@@ -159,7 +159,7 @@ if [ "${LAUNCH_TENSORBOARD}" = true ]; then
         if ! python3 -m tensorboard --version &> /dev/null 2>&1 && ! python -m tensorboard --version &> /dev/null 2>&1; then
             echo "ERROR: Cannot launch TensorBoard - not installed"
             echo "Please install TensorBoard first:"
-            echo "  pip install tensorboard"
+            echo "  uv sync  # Install all dependencies from pyproject.toml (includes tensorboard)"
             exit 1
         fi
     fi

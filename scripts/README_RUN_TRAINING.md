@@ -185,8 +185,9 @@ The script executes the following steps automatically:
 
 ### Step 1: Environment Setup
 - Creates/activates Python virtual environment using `uv`
-- Verifies Python version (3.8-3.12)
-- Installs SAM3 dependencies (`pip install -e ".[train]"` in `sam3/` directory)
+- Verifies Python version (3.9-3.12)
+- Installs dependencies from `pyproject.toml` using `uv sync`
+- Installs SAM3 package in editable mode with training extras (`uv pip install -e "sam3/[train]"`)
 
 **Skip with:** `--skip-env-setup`
 

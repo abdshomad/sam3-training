@@ -13,19 +13,21 @@ SAM 3 is a powerful segmentation model that can segment objects in images and vi
 - `plan/` - Implementation plan and task breakdown
 - `experiments/` - Training logs, configs, and outputs
 - `rf100-vl/` - Roboflow 100-VL dataset utilities
+- `pyproject.toml` - Project dependencies and configuration (managed with `uv`)
+- `.venv/` - Virtual environment (created by `uv venv`)
 
 ## Getting Started
 
 ### Prerequisites
 
-- Python 3.8-3.12 (preferably 3.12)
+- Python 3.9-3.12 (preferably 3.12)
 - `uv` package manager ([installation guide](https://github.com/astral-sh/uv))
 - CUDA-capable GPU (recommended for training)
 - Git with submodule support
 
 ### Setup
 
-1. Clone this repository:
+1. **Clone this repository:**
    ```bash
    git clone --recurse-submodules <your-repo-url>
    ```
@@ -35,19 +37,58 @@ SAM 3 is a powerful segmentation model that can segment objects in images and vi
    git submodule update --init --recursive
    ```
 
-2. Create virtual environment and install dependencies:
+2. **Create virtual environment and install dependencies:**
    ```bash
    uv venv
-   source .venv/bin/activate  # or use: uv run
+   source .venv/bin/activate  # or use: uv run python ...
    uv sync
    ```
 
-3. Install SAM3 training dependencies:
+   This will install all dependencies defined in `pyproject.toml`, including:
+   - SAM3 core dependencies (timm, numpy, tqdm, huggingface_hub, etc.)
+   - Training dependencies (hydra-core, submitit, tensorboard, etc.)
+   - Dataset utilities (roboflow)
+   - Configuration management (python-dotenv)
+   - Experiment tracking (wandb)
+
+3. **Install local packages in editable mode:**
    ```bash
-   cd sam3
-   pip install -e ".[train]"
-   cd ..
+   # Install SAM3 with training extras
+   uv pip install -e "sam3/[train]"
+   
+   # Install rf100-vl dataset utilities
+   uv pip install -e rf100-vl/
    ```
+
+4. **Install PyTorch** (choose based on your CUDA version):
+   ```bash
+   # For CUDA 12.6 (recommended)
+   uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+   
+   # For CUDA 12.1
+   uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+   
+   # For CPU only (not recommended for training)
+   uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+   ```
+
+5. **Optional: Install additional extras:**
+   ```bash
+   # For development tools (pytest, black, ruff, etc.)
+   uv sync --extra dev
+   
+   # For Jupyter notebook support
+   uv sync --extra notebooks
+   ```
+
+### Dependency Management
+
+This repository uses `uv` for dependency management with a `pyproject.toml` file at the root. The file includes:
+- All SAM3 dependencies (core + training)
+- Dataset utilities (roboflow)
+- Development and notebook dependencies as optional extras
+
+To add new dependencies, edit `pyproject.toml` and run `uv sync` to update the environment.
 
 ### Training
 

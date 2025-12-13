@@ -83,11 +83,22 @@ if [ -f ".venv/bin/activate" ]; then
     source .venv/bin/activate
     echo "✓ Virtual environment activated"
     
-    # Ensure pip is installed in the venv
-    if [ ! -f ".venv/bin/pip" ]; then
+    # Ensure pip is available (needed for uv pip install commands)
+    if ! python -m pip --version &> /dev/null; then
         echo "Installing pip in virtual environment..."
-        python -m ensurepip --upgrade || python -m pip install --upgrade pip
-        echo "✓ Pip installed in virtual environment"
+        python -m ensurepip --upgrade || {
+            echo "WARNING: ensurepip failed, pip may not be available"
+        }
+        echo "✓ Pip setup completed"
+    fi
+    
+    # Install dependencies from pyproject.toml using uv sync
+    if [ -f "pyproject.toml" ]; then
+        echo "Installing dependencies from pyproject.toml..."
+        uv sync || {
+            echo "WARNING: uv sync failed, but continuing..."
+        }
+        echo "✓ Dependencies synced from pyproject.toml"
     fi
 else
     echo "ERROR: Failed to activate virtual environment"

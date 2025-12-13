@@ -88,12 +88,20 @@ echo ""
 # Create download directory
 mkdir -p "${DOWNLOAD_PATH}"
 
+# Ensure dependencies from pyproject.toml are installed via uv sync first
+if [ -f "${PROJECT_ROOT}/pyproject.toml" ]; then
+    echo "Ensuring dependencies from pyproject.toml are installed..."
+    uv sync --quiet || {
+        echo "WARNING: uv sync failed, but continuing..."
+    }
+fi
+
 # Install rf100vl package if not already installed
 # Check if package is installed using the active Python (venv or system)
 if ! python -c "import rf100vl" 2>/dev/null; then
-    echo "Installing rf100vl package using uv..."
+    echo "Installing rf100vl package in editable mode..."
     cd rf100-vl
-    # Use uv pip install for faster, more reliable package installation
+    # Use uv pip install for local editable package installation
     # Explicitly use venv's Python if venv exists, otherwise use system Python
     if [ -f "${PROJECT_ROOT}/.venv/bin/python" ]; then
         # Use uv pip with explicit Python path to ensure installation into venv

@@ -53,39 +53,44 @@ if python -m pip show sam3 &>/dev/null; then
     fi
 fi
 
-# Check if pip is available (use python -m pip to ensure we use venv's pip)
-if ! python -m pip --version &> /dev/null; then
-    echo "ERROR: pip not found. Installing pip..."
-    python -m ensurepip --upgrade || {
-        echo "ERROR: Failed to install pip. Please ensure pip is available."
-        exit 1
-    }
+# Check if uv is available
+if ! command -v uv &> /dev/null; then
+    echo "ERROR: uv not found. Please install uv first."
+    echo "Installation: curl -LsSf https://astral.sh/uv/install.sh | sh"
+    exit 1
 fi
 
-# Use python -m pip to ensure we're using the venv's pip
-PIP_CMD="python -m pip"
-echo "Using pip: $(${PIP_CMD} --version)"
+# Ensure dependencies from pyproject.toml are installed via uv sync
+if [ -f "${PROJECT_ROOT}/pyproject.toml" ]; then
+    echo "Ensuring dependencies from pyproject.toml are installed..."
+    cd "${PROJECT_ROOT}"
+    uv sync --quiet || {
+        echo "WARNING: uv sync failed, but continuing with SAM3 installation..."
+    }
+    cd "${SAM3_DIR}"
+else
+    echo "Note: pyproject.toml not found at project root, skipping uv sync"
+fi
 
 # Check Python version
 PYTHON_VERSION=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-PYTHON_MAJOR_MINOR=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
 echo "Python version: ${PYTHON_VERSION}"
 
-# Verify Python version is supported (3.8-3.12)
+# Verify Python version is supported (3.9-3.12)
 PYTHON_MAJOR=$(python -c "import sys; print(sys.version_info.major)")
 PYTHON_MINOR=$(python -c "import sys; print(sys.version_info.minor)")
-if [ "${PYTHON_MAJOR}" -ne 3 ] || [ "${PYTHON_MINOR}" -lt 8 ] || [ "${PYTHON_MINOR}" -gt 12 ]; then
-    echo "WARNING: Python ${PYTHON_VERSION} is not officially supported by SAM3 (requires 3.8-3.12)"
+if [ "${PYTHON_MAJOR}" -ne 3 ] || [ "${PYTHON_MINOR}" -lt 9 ] || [ "${PYTHON_MINOR}" -gt 12 ]; then
+    echo "WARNING: Python ${PYTHON_VERSION} is not officially supported by SAM3 (requires 3.9-3.12)"
     echo "You may encounter compatibility issues."
     echo ""
 fi
 
-echo "SAM3 not found. Installing SAM3 with training dependencies..."
-echo "Running: ${PIP_CMD} install -e \".[train]\""
+echo "Installing SAM3 package in editable mode with training dependencies..."
+echo "Running: uv pip install -e \".[train]\""
 echo ""
 
-# Install SAM3 with training dependencies
-if ${PIP_CMD} install -e ".[train]"; then
+# Install SAM3 with training dependencies using uv pip
+if uv pip install -e ".[train]"; then
     echo ""
     echo "✓ SAM3 installation completed successfully"
     echo ""
@@ -94,7 +99,8 @@ else
     echo "ERROR: SAM3 installation failed"
     echo ""
     echo "Troubleshooting tips:"
-    echo "  - Ensure Python version is 3.8-3.12 (SAM3 requirement)"
+    echo "  - Ensure Python version is 3.9-3.12 (SAM3 requirement)"
+    echo "  - Run 'uv sync' at project root to install dependencies from pyproject.toml"
     echo "  - Check that all system dependencies are installed"
     echo "  - Verify internet connection for downloading packages"
     echo "  - Try using: uv python install 3.12 && uv venv --python 3.12"

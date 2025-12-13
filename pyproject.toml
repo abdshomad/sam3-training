@@ -1,0 +1,96 @@
+[project]
+name = "sam3-training"
+version = "0.1.0"
+description = "SAM3 training workspace with all dependencies"
+requires-python = ">=3.9,<3.13"
+readme = "README.md"
+license = {text = "MIT"}
+
+dependencies = [
+    # SAM3 core dependencies
+    "timm>=1.0.17",
+    "numpy==1.26",
+    "tqdm",
+    "ftfy==6.1.1",
+    "regex",
+    "iopath>=0.1.10",
+    "typing_extensions",
+    "huggingface_hub",
+    
+    # SAM3 training dependencies
+    "hydra-core",
+    "submitit",
+    "tensorboard",
+    "zstandard",
+    "scipy",
+    "torchmetrics",
+    "fvcore",
+    "fairscale",
+    "scikit-image",
+    "scikit-learn",
+    
+    # Dataset dependencies
+    "roboflow",  # For rf100-vl
+    
+    # Configuration management
+    "python-dotenv",
+    
+    # Optional but commonly used
+    "wandb",  # For experiment tracking (optional but referenced in trainer)
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "black==24.2.0",
+    "ufmt==2.8.0",
+    "ruff-api==0.1.0",
+    "usort==1.0.2",
+    "gitpython==3.1.31",
+    "yt-dlp",
+    "pandas",
+    "opencv-python",
+    "pycocotools",
+    "numba",
+    "python-rapidjson",
+]
+
+notebooks = [
+    "matplotlib",
+    "jupyter",
+    "notebook",
+    "ipywidgets",
+    "ipycanvas",
+    "ipympl",
+    "pycocotools",
+    "decord",
+    "opencv-python",
+    "einops",
+    "scikit-image",
+    "scikit-learn",
+]
+
+# Installation Instructions:
+#
+# 1. Create virtual environment and install dependencies:
+#    uv venv
+#    source .venv/bin/activate  # or use: uv run python ...
+#    uv sync
+#
+# 2. Install local packages in editable mode (after uv sync):
+#    uv pip install -e sam3/  # For SAM3 package
+#    uv pip install -e rf100-vl/  # For rf100-vl package
+#    
+#    Or install SAM3 with training extras:
+#    uv pip install -e "sam3/[train]"
+#
+# 3. Install PyTorch separately based on your CUDA version:
+#    For CUDA 12.6: uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
+#    For CUDA 12.1: uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+#    For CPU only: uv pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+#
+# 4. Optional: Install additional extras:
+#    uv sync --extra dev  # For development tools
+#    uv sync --extra notebooks  # For Jupyter notebook support
+
