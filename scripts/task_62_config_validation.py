@@ -140,6 +140,58 @@ def validate_roboflow_dataset_structure(roboflow_root: str) -> tuple[bool, Optio
     return True, f"Found {len(valid_datasets)} valid datasets (checked {len(subdirs)} total)", valid_datasets
 
 
+def validate_odinw_dataset_files(config: dict, odinw_root: str) -> tuple[bool, Optional[str], List[str]]:
+    """Validate that required ODinW annotation files exist."""
+    root_path = Path(odinw_root)
+    if not root_path.exists():
+        return False, f"ODinW root does not exist: {odinw_root}", []
+    
+    # Get all_odinw_supercategories from config
+    all_supercategories = config.get('all_odinw_supercategories', [])
+    if not all_supercategories:
+        # Try to get from odinw_train section
+        odinw_train = config.get('odinw_train', {})
+        # If using job array, we can't validate all files, so just check structure
+        return True, "ODinW config uses job arrays - cannot validate all files without task_index", []
+    
+    missing_files = []
+    found_files = []
+    first_supercat_missing = False
+    
+    # Check validation annotation files for first few supercategories
+    # CRITICAL: The first supercategory's files MUST exist because training initializes with it
+    check_count = min(3, len(all_supercategories))  # Check first 3 or all if less than 3
+    for idx, supercat in enumerate(all_supercategories[:check_count]):
+        if isinstance(supercat, dict):
+            val_info = supercat.get('val', {})
+            json_path = val_info.get('json', '')
+            
+            if json_path:
+                # Resolve path relative to odinw_root
+                full_path = root_path / json_path
+                if full_path.exists():
+                    found_files.append(json_path)
+                else:
+                    missing_files.append(str(full_path))
+                    # First supercategory is critical - training will fail without it
+                    if idx == 0:
+                        first_supercat_missing = True
+    
+    # If first supercategory's files are missing, fail validation (training will definitely fail)
+    if first_supercat_missing:
+        return False, f"First ODinW supercategory annotation file missing: {missing_files[0]}. Training will fail. Please download ODinW dataset.", missing_files
+    
+    # If no files found at all, fail validation
+    if not found_files and missing_files:
+        return False, f"No ODinW annotation files found. First missing: {missing_files[0]}. Please download ODinW dataset.", missing_files
+    
+    # If some files are missing (but not the first), warn but don't fail
+    if missing_files:
+        return True, f"Found {len(found_files)}/{check_count} annotation files checked, {len(missing_files)} missing (training may fail for missing datasets)", found_files
+    
+    return True, f"Found {len(found_files)} annotation files checked", found_files
+
+
 def check_gpu_requirements(config: dict, available_gpus: int) -> tuple[bool, Optional[str]]:
     """Check if GPU requirements match available resources."""
     launcher = config.get('launcher', {})
@@ -350,13 +402,17 @@ def main() -> int:
         valid, error = check_path_exists(odinw_root, 'odinw_data_root', must_be_dir=True)
         if valid:
             print(f"✓ odinw_data_root: {odinw_root}")
-            # Basic structure check for ODinW
-            root_path = Path(odinw_root)
-            subdirs = [d for d in root_path.iterdir() if d.is_dir()] if root_path.exists() else []
-            if subdirs:
-                print(f"  Found {len(subdirs)} dataset subdirectories")
+            # Validate ODinW annotation files
+            files_valid, files_msg, found_files = validate_odinw_dataset_files(config, odinw_root)
+            if files_valid:
+                if 'may fail' in files_msg:
+                    print(f"  ⚠ {files_msg}")
+                    # Warn but don't fail - job arrays may handle missing datasets
+                else:
+                    print(f"  ✓ {files_msg}")
             else:
-                print(f"  WARNING: No dataset subdirectories found in {odinw_root}")
+                print(f"  ✗ {files_msg}")
+                all_valid = False
         else:
             print(f"✗ odinw_data_root: {error}")
             all_valid = False

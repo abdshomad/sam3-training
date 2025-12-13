@@ -303,8 +303,20 @@ if [ "${SKIP_CONFIG_VALIDATION}" = false ] && [ "${DRY_RUN}" = false ]; then
         echo "Would run: uv run python scripts/task_62_config_validation.py ${VALIDATE_ARGS[*]}"
     else
         uv run python scripts/task_62_config_validation.py "${VALIDATE_ARGS[@]}"
-        if [ $? -ne 0 ]; then
+        VALIDATION_EXIT_CODE=$?
+        if [ ${VALIDATION_EXIT_CODE} -ne 0 ]; then
+            echo ""
             echo "ERROR: Config validation failed" >&2
+            echo ""
+            echo "Common issues:"
+            echo "  - ODinW dataset not downloaded or incomplete"
+            echo "  - Annotation files missing (e.g., annotations_without_background.json)"
+            echo "  - Dataset path incorrect"
+            echo ""
+            echo "To fix:"
+            echo "  1. Download ODinW dataset using: bash scripts/task_23_download_odinw_dataset.sh"
+            echo "  2. Or set ODINW_DATA_ROOT to the correct path"
+            echo "  3. Or use --skip-config-validation to proceed anyway (not recommended)"
             exit 1
         fi
     fi
