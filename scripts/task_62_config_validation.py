@@ -17,10 +17,11 @@ from typing import Dict, List, Optional
 from dotenv import load_dotenv
 import yaml
 
-# Load environment variables from .env and .env.rf100vl files
+# Load environment variables from .env, .env.rf100vl, and .env.odinw files
 project_root = Path(__file__).parent.parent
 load_dotenv(project_root / '.env')
-load_dotenv(project_root / '.env.rf100vl')  # RF100-VL specific settings
+load_dotenv(project_root / '.env.rf100vl', override=True)  # RF100-VL specific settings
+load_dotenv(project_root / '.env.odinw', override=True)  # ODinW specific settings
 
 
 def get_project_root() -> Path:
@@ -220,26 +221,70 @@ def validate_training_parameters(config: dict) -> tuple[bool, List[str]]:
     return len(issues) == 0, issues
 
 
-def check_supercategory_set(config: dict) -> tuple[bool, Optional[str]]:
+def detect_dataset_type(config: dict) -> str:
+    """Detect dataset type from config structure."""
+    paths = config.get('paths', {})
+    
+    # Check for ODinW
+    if 'odinw_data_root' in paths and paths.get('odinw_data_root'):
+        return 'odinw'
+    
+    # Check for RF100-VL
+    if 'roboflow_vl_100_root' in paths and paths.get('roboflow_vl_100_root'):
+        return 'rf100vl'
+    
+    # Try to detect from config sections
+    if 'odinw_train' in config:
+        return 'odinw'
+    if 'roboflow_train' in config:
+        return 'rf100vl'
+    
+    # Default to rf100vl for backward compatibility
+    return 'rf100vl'
+
+
+def check_supercategory_set(config: dict, dataset_type: str) -> tuple[bool, Optional[str]]:
     """Check that supercategory is set or will be set via job array."""
-    roboflow_train = config.get('roboflow_train', {})
-    supercategory = roboflow_train.get('supercategory', '')
+    if dataset_type == 'odinw':
+        # ODinW uses supercategory_tuple and all_odinw_supercategories
+        odinw_train = config.get('odinw_train', {})
+        supercategory_tuple = odinw_train.get('supercategory_tuple', '')
+        
+        # Check if it uses job array syntax
+        if isinstance(supercategory_tuple, str) and '${' in supercategory_tuple and 'submitit.job_array.task_index' in supercategory_tuple:
+            return True, "Supercategory tuple will be set via job array"
+        
+        # Check if all_odinw_supercategories exists (job array will use this)
+        if 'all_odinw_supercategories' in config:
+            supercategories = config.get('all_odinw_supercategories', [])
+            if isinstance(supercategories, list) and len(supercategories) > 0:
+                return True, f"ODinW job array configured with {len(supercategories)} supercategories"
+        
+        # Check if it's a specific supercategory tuple (dict structure)
+        if isinstance(supercategory_tuple, dict) and 'name' in supercategory_tuple:
+            return True, f"Supercategory tuple is set to: {supercategory_tuple.get('name', 'unknown')}"
+        
+        return False, "ODinW supercategory_tuple is not set and not using job array"
     
-    # Check if it uses job array syntax
-    if '${' in str(supercategory) and 'submitit.job_array.task_index' in str(supercategory):
-        return True, "Supercategory will be set via job array"
-    
-    # Check if it's a specific supercategory
-    if supercategory and supercategory not in ['<YOUR_SUPERCATEGORY>', '']:
-        return True, f"Supercategory is set to: {supercategory}"
-    
-    return False, "Supercategory is not set and not using job array"
+    else:  # rf100vl
+        roboflow_train = config.get('roboflow_train', {})
+        supercategory = roboflow_train.get('supercategory', '')
+        
+        # Check if it uses job array syntax
+        if '${' in str(supercategory) and 'submitit.job_array.task_index' in str(supercategory):
+            return True, "Supercategory will be set via job array"
+        
+        # Check if it's a specific supercategory
+        if supercategory and supercategory not in ['<YOUR_SUPERCATEGORY>', '']:
+            return True, f"Supercategory is set to: {supercategory}"
+        
+        return False, "Supercategory is not set and not using job array"
 
 
 def main() -> int:
     """Main function."""
     parser = argparse.ArgumentParser(
-        description='Validate training config file for RF100-VL training'
+        description='Validate training config file (auto-detects RF100-VL or ODinW)'
     )
     parser.add_argument(
         '--config',
@@ -290,25 +335,45 @@ def main() -> int:
         print(f"ERROR: Failed to load config: {e}", file=sys.stderr)
         return 1
     
+    # Detect dataset type
+    dataset_type = detect_dataset_type(config)
+    print(f"Detected dataset type: {dataset_type.upper()}")
+    
     # Validate paths section
     print("\n=== Validating Paths ===")
     paths = config.get('paths', {})
     all_valid = True
     
-    # Check roboflow_vl_100_root
-    roboflow_root = paths.get('roboflow_vl_100_root', '')
-    valid, error = check_path_exists(roboflow_root, 'roboflow_vl_100_root', must_be_dir=True)
-    if valid:
-        print(f"✓ roboflow_vl_100_root: {roboflow_root}")
-        # Validate dataset structure
-        struct_valid, struct_msg, datasets = validate_roboflow_dataset_structure(roboflow_root)
-        if struct_valid:
-            print(f"  {struct_msg}")
+    # Check dataset root based on type
+    if dataset_type == 'odinw':
+        odinw_root = paths.get('odinw_data_root', '')
+        valid, error = check_path_exists(odinw_root, 'odinw_data_root', must_be_dir=True)
+        if valid:
+            print(f"✓ odinw_data_root: {odinw_root}")
+            # Basic structure check for ODinW
+            root_path = Path(odinw_root)
+            subdirs = [d for d in root_path.iterdir() if d.is_dir()] if root_path.exists() else []
+            if subdirs:
+                print(f"  Found {len(subdirs)} dataset subdirectories")
+            else:
+                print(f"  WARNING: No dataset subdirectories found in {odinw_root}")
         else:
-            print(f"  WARNING: {struct_msg}")
-    else:
-        print(f"✗ roboflow_vl_100_root: {error}")
-        all_valid = False
+            print(f"✗ odinw_data_root: {error}")
+            all_valid = False
+    else:  # rf100vl
+        roboflow_root = paths.get('roboflow_vl_100_root', '')
+        valid, error = check_path_exists(roboflow_root, 'roboflow_vl_100_root', must_be_dir=True)
+        if valid:
+            print(f"✓ roboflow_vl_100_root: {roboflow_root}")
+            # Validate dataset structure
+            struct_valid, struct_msg, datasets = validate_roboflow_dataset_structure(roboflow_root)
+            if struct_valid:
+                print(f"  {struct_msg}")
+            else:
+                print(f"  WARNING: {struct_msg}")
+        else:
+            print(f"✗ roboflow_vl_100_root: {error}")
+            all_valid = False
     
     # Check experiment_log_dir
     exp_dir = paths.get('experiment_log_dir', '')
@@ -336,7 +401,7 @@ def main() -> int:
     
     # Check supercategory
     print("\n=== Validating Training Configuration ===")
-    supercat_valid, supercat_msg = check_supercategory_set(config)
+    supercat_valid, supercat_msg = check_supercategory_set(config, dataset_type)
     if supercat_valid:
         print(f"✓ {supercat_msg}")
     else:
