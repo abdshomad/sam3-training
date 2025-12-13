@@ -12,6 +12,20 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # Change to project root
 cd "${PROJECT_ROOT}"
 
+# Load environment variables from .env file if it exists
+if [ -f "${PROJECT_ROOT}/.env" ]; then
+    set -a  # Automatically export all variables
+    source "${PROJECT_ROOT}/.env"
+    set +a  # Turn off automatic export
+fi
+
+# Load RF100-VL specific environment variables from .env.rf100vl if it exists
+if [ -f "${PROJECT_ROOT}/.env.rf100vl" ]; then
+    set -a  # Automatically export all variables
+    source "${PROJECT_ROOT}/.env.rf100vl"
+    set +a  # Turn off automatic export
+fi
+
 # Initialize variables
 CONFIG_ARG=""
 MODE="local"
@@ -343,8 +357,14 @@ if [ -n "${QOS}" ]; then
     EXECUTION_ARGS+=(--qos "${QOS}")
 fi
 
-"${SCRIPT_DIR}/task_40_execution_logic_construction.sh" "${EXECUTION_ARGS[@]}"
-if [ $? -ne 0 ]; then
+# Source the script to get exported variables
+# Temporarily disable set -e to avoid issues when sourcing
+set +e
+source "${SCRIPT_DIR}/task_40_execution_logic_construction.sh" "${EXECUTION_ARGS[@]}"
+EXECUTION_EXIT_CODE=$?
+set -e
+
+if [ ${EXECUTION_EXIT_CODE} -ne 0 ]; then
     echo "ERROR: Command construction failed"
     exit 1
 fi

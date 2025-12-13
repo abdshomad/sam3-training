@@ -97,7 +97,7 @@ if command -v uv &> /dev/null; then
     uv run python odinw/download.py --dataset_path "${DOWNLOAD_PATH}" --dataset_names all
 else
     # Fallback to system python if uv is not available
-    python odinw/download.py --dataset_path "${DOWNLOAD_PATH}" --dataset_names all
+    uv run python odinw/download.py --dataset_path "${DOWNLOAD_PATH}" --dataset_names all
 fi
 
 cd ..

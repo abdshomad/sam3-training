@@ -21,6 +21,13 @@ if [ -f "${PROJECT_ROOT}/.env" ]; then
     set -a  # Automatically export all variables
     source "${PROJECT_ROOT}/.env"
     set +a  # Turn off automatic export
+
+# Load RF100-VL specific environment variables from .env.rf100vl if it exists
+if [ -f "${PROJECT_ROOT}/.env.rf100vl" ]; then
+    set -a  # Automatically export all variables
+    source "${PROJECT_ROOT}/.env.rf100vl"
+    set +a  # Turn off automatic export
+fi
 fi
 
 # Check if virtual environment is active (reuse logic from task 1.1)
@@ -36,7 +43,7 @@ else
 fi
 
 # Initialize command components
-BASE_CMD="python -m sam3.train.train"
+BASE_CMD="uv run python -m sam3.train.train"
 CONFIG_ARG=""
 NUM_GPUS=""
 USE_CLUSTER="0"
@@ -155,7 +162,7 @@ if [ -n "${NUM_GPUS}" ] && [ "${NUM_GPUS}" -gt 0 ]; then
         echo "✓ Requested GPUs (${NUM_GPUS}) within available (${AVAILABLE_GPUS})"
         
         # Check CUDA availability
-        if python -c "import torch; print(torch.cuda.is_available())" 2>/dev/null | grep -q "True"; then
+        if uv run python -c "import torch; print(torch.cuda.is_available())" 2>/dev/null | grep -q "True"; then
             echo "✓ CUDA is available in PyTorch"
         else
             echo "WARNING: CUDA not available in PyTorch. GPU training may not work."

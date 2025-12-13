@@ -80,7 +80,66 @@ if [ -z "${CONFIG_ARG}" ]; then
     exit 0
 fi
 
-# Normalize config path
+# Check if config path is absolute and exists
+if [[ "${CONFIG_ARG}" =~ ^/ ]]; then
+    # Absolute path - check if it exists directly
+    if [ -f "${CONFIG_ARG}" ]; then
+        CONFIG_PATH="${CONFIG_ARG}"
+        NORMALIZED_CONFIG="$(basename "${CONFIG_ARG}")"
+        echo ""
+        echo "Checking config file..."
+        echo "  Input: ${CONFIG_ARG}"
+        echo "  Type: Absolute path"
+        echo "  Full path: ${CONFIG_PATH}"
+        echo ""
+        echo "✓ Config file exists: ${CONFIG_PATH}"
+        echo ""
+        echo "Config file validation completed successfully!"
+        echo ""
+        
+        # Export for use by subsequent scripts
+        export SAM3_CONFIG_PATH="${CONFIG_PATH}"
+        export SAM3_CONFIG_NAME="${NORMALIZED_CONFIG}"
+        
+        exit 0
+    else
+        # Absolute path doesn't exist - try with .yaml extension if missing
+        if [[ ! "${CONFIG_ARG}" =~ \.yaml$ ]]; then
+            CONFIG_PATH="${CONFIG_ARG}.yaml"
+            if [ -f "${CONFIG_PATH}" ]; then
+                NORMALIZED_CONFIG="$(basename "${CONFIG_PATH}")"
+                echo ""
+                echo "Checking config file..."
+                echo "  Input: ${CONFIG_ARG}"
+                echo "  Type: Absolute path (added .yaml extension)"
+                echo "  Full path: ${CONFIG_PATH}"
+                echo ""
+                echo "✓ Config file exists: ${CONFIG_PATH}"
+                echo ""
+                echo "Config file validation completed successfully!"
+                echo ""
+                
+                # Export for use by subsequent scripts
+                export SAM3_CONFIG_PATH="${CONFIG_PATH}"
+                export SAM3_CONFIG_NAME="${NORMALIZED_CONFIG}"
+                
+                exit 0
+            fi
+        fi
+        # Absolute path doesn't exist - show error
+        echo ""
+        echo "Checking config file..."
+        echo "  Input: ${CONFIG_ARG}"
+        echo "  Type: Absolute path"
+        echo "  Full path: ${CONFIG_ARG}"
+        echo ""
+        echo "ERROR: Config file does not exist: ${CONFIG_ARG}"
+        echo ""
+        exit 1
+    fi
+fi
+
+# Relative path - normalize and check in CONFIGS_DIR
 # Remove leading "configs/" if present
 NORMALIZED_CONFIG="${CONFIG_ARG#configs/}"
 # Remove leading "/" if present

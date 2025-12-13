@@ -21,10 +21,17 @@ if [ -f "${PROJECT_ROOT}/.env" ]; then
     set -a  # Automatically export all variables
     source "${PROJECT_ROOT}/.env"
     set +a  # Turn off automatic export
+
+# Load RF100-VL specific environment variables from .env.rf100vl if it exists
+if [ -f "${PROJECT_ROOT}/.env.rf100vl" ]; then
+    set -a  # Automatically export all variables
+    source "${PROJECT_ROOT}/.env.rf100vl"
+    set +a  # Turn off automatic export
+fi
 fi
 
 # Initialize command components
-BASE_CMD="python -m sam3.train.train"
+BASE_CMD="uv run python -m sam3.train.train"
 CONFIG_ARG=""
 USE_CLUSTER=""
 NUM_GPUS=""
@@ -147,21 +154,95 @@ if [ -z "${CONFIG_ARG}" ]; then
     exit 0
 fi
 
-# Normalize config path: ensure it starts with "configs/" for Hydra
-# Hydra expects configs relative to the sam3.train package configs directory
-if [[ ! "${CONFIG_ARG}" =~ ^configs/ ]]; then
-    CONFIG_ARG="configs/${CONFIG_ARG}"
-    echo "Normalized config path to: ${CONFIG_ARG}"
+# Handle config path normalization
+STANDARD_CONFIGS_DIR="${PROJECT_ROOT}/sam3/sam3/train/configs"
+
+# Check if path is absolute
+if [[ "${CONFIG_ARG}" =~ ^/ ]]; then
+    # Absolute path - check if it's within the standard configs directory
+    if [[ "${CONFIG_ARG}" == "${STANDARD_CONFIGS_DIR}"* ]]; then
+        # Convert to relative path from standard configs directory
+        CONFIG_ARG="${CONFIG_ARG#${STANDARD_CONFIGS_DIR}/}"
+        # Ensure it starts with "configs/" for Hydra
+        if [[ ! "${CONFIG_ARG}" =~ ^configs/ ]]; then
+            CONFIG_ARG="configs/${CONFIG_ARG}"
+        fi
+        echo "Converted absolute path to relative: ${CONFIG_ARG}"
+    else
+        # Absolute path outside standard configs directory
+        # Hydra's compose() expects relative paths, so we need to copy the file
+        # to the standard configs directory
+        ABSOLUTE_CONFIG_PATH="${CONFIG_ARG}"
+        if [ ! -f "${ABSOLUTE_CONFIG_PATH}" ]; then
+            echo "ERROR: Config file not found: ${ABSOLUTE_CONFIG_PATH}"
+            exit 1
+        fi
+        
+        # Generate a unique name for the copied config
+        CONFIG_BASENAME=$(basename "${ABSOLUTE_CONFIG_PATH}" .yaml)
+        TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+        COPIED_CONFIG_NAME="${CONFIG_BASENAME}_${TIMESTAMP}.yaml"
+        COPIED_CONFIG_PATH="${STANDARD_CONFIGS_DIR}/${COPIED_CONFIG_NAME}"
+        
+        # Check if this is a resolved config (missing # @package _global_ directive)
+        FIRST_LINE=$(head -n 1 "${ABSOLUTE_CONFIG_PATH}")
+        IS_RESOLVED_CONFIG=false
+        if [[ "${FIRST_LINE}" != "# @package _global_" ]] && [[ "${ABSOLUTE_CONFIG_PATH}" == *"resolved_config"* ]]; then
+            IS_RESOLVED_CONFIG=true
+        fi
+        
+        # Copy the config file, adding # @package _global_ if needed
+        echo "Copying resolved config to standard configs directory..."
+        echo "  Source: ${ABSOLUTE_CONFIG_PATH}"
+        echo "  Destination: ${COPIED_CONFIG_PATH}"
+        
+        if [ "${IS_RESOLVED_CONFIG}" = true ]; then
+            # For resolved configs, we need to ensure they work with Hydra
+            # Add # @package _global_ directive at the top for Hydra
+            # Also ensure there's a blank line after defaults for proper formatting
+            {
+                echo "# @package _global_"
+                # Read the file and ensure proper formatting
+                FIRST_LINE=$(head -n 1 "${ABSOLUTE_CONFIG_PATH}")
+                if [[ "${FIRST_LINE}" == "defaults:" ]]; then
+                    # File starts with defaults, add package directive and keep defaults
+                    echo "defaults:"
+                    tail -n +2 "${ABSOLUTE_CONFIG_PATH}"
+                elif [[ "${FIRST_LINE}" != "# @package _global_" ]]; then
+                    # File doesn't have package directive, add it
+                    cat "${ABSOLUTE_CONFIG_PATH}"
+                else
+                    # File already has package directive
+                    tail -n +2 "${ABSOLUTE_CONFIG_PATH}"
+                fi
+            } > "${COPIED_CONFIG_PATH}"
+            echo "  Added # @package _global_ directive for Hydra compatibility"
+        else
+            cp "${ABSOLUTE_CONFIG_PATH}" "${COPIED_CONFIG_PATH}"
+        fi
+        
+        # Use the relative path for Hydra
+        CONFIG_ARG="configs/${COPIED_CONFIG_NAME}"
+        echo "Using copied config: ${CONFIG_ARG}"
+    fi
+else
+    # Relative path - normalize to start with "configs/" for Hydra
+    if [[ ! "${CONFIG_ARG}" =~ ^configs/ ]]; then
+        CONFIG_ARG="configs/${CONFIG_ARG}"
+        echo "Normalized config path to: ${CONFIG_ARG}"
+    fi
 fi
 
 # Validate config file exists
-# After normalization, CONFIG_ARG always starts with "configs/"
+# After normalization, CONFIG_ARG should start with "configs/"
 CONFIG_PATH="${PROJECT_ROOT}/sam3/sam3/train/${CONFIG_ARG}"
 
 if [ ! -f "${CONFIG_PATH}" ]; then
     echo "WARNING: Config file not found at: ${CONFIG_PATH}"
     echo "The command will be constructed, but may fail at runtime"
     echo "Expected location: ${CONFIG_PATH}"
+else
+    echo "✓ Config file exists: ${CONFIG_PATH}"
 fi
 
 # Build the command
@@ -241,5 +322,10 @@ echo "Or use the exported variable:"
 echo "  eval \${SAM3_TRAIN_COMMAND}"
 echo ""
 
-exit 0
+# Use return if sourced, exit if executed
+if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
+    return 0
+else
+    exit 0
+fi
 

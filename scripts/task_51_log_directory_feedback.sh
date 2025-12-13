@@ -21,6 +21,13 @@ if [ -f "${PROJECT_ROOT}/.env" ]; then
     set -a  # Automatically export all variables
     source "${PROJECT_ROOT}/.env"
     set +a  # Turn off automatic export
+
+# Load RF100-VL specific environment variables from .env.rf100vl if it exists
+if [ -f "${PROJECT_ROOT}/.env.rf100vl" ]; then
+    set -a  # Automatically export all variables
+    source "${PROJECT_ROOT}/.env.rf100vl"
+    set +a  # Turn off automatic export
+fi
 fi
 
 EXPERIMENT_LOG_DIR=""

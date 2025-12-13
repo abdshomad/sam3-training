@@ -94,7 +94,7 @@ else
 fi
 
 # Check Python version
-PYTHON_VERSION=$(python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+PYTHON_VERSION=$(uv run python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
 echo "Python version: ${PYTHON_VERSION}"
 
 # Verify Python version is supported (3.9-3.12)
@@ -127,6 +127,51 @@ else
     echo "  - Try using: uv python install 3.12 && uv venv --python 3.12"
     exit 1
 fi
+
+# Install additional dependencies required for training but only in [notebooks] extras
+# These are needed for training but not included in [train] extras
+echo "Ensuring additional training dependencies are installed..."
+MISSING_DEPS=()
+
+# Check and install einops (required for sam3.sam.rope)
+if ! uv pip show einops &>/dev/null; then
+    MISSING_DEPS+=("einops")
+fi
+
+# Check and install decord (required for sam3.train.data.sam3_image_dataset)
+if ! uv pip show decord &>/dev/null; then
+    MISSING_DEPS+=("decord")
+fi
+
+# Check and install pycocotools (required for sam3.train.data.coco_json_loaders)
+if ! uv pip show pycocotools &>/dev/null; then
+    MISSING_DEPS+=("pycocotools")
+fi
+
+# Check and install psutil (required for sam3.model.sam3_video_predictor)
+if ! uv pip show psutil &>/dev/null; then
+    MISSING_DEPS+=("psutil")
+fi
+
+# Check and install opencv-python (required for sam3.train.transforms.point_sampling)
+if ! uv pip show opencv-python &>/dev/null; then
+    MISSING_DEPS+=("opencv-python")
+fi
+
+if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
+    echo "Installing missing dependencies: ${MISSING_DEPS[*]}..."
+    if uv pip install "${MISSING_DEPS[@]}"; then
+        echo "✓ Additional dependencies installed successfully"
+    else
+        echo "WARNING: Failed to install some dependencies, but continuing..."
+        echo "Note: The following are required for training: ${MISSING_DEPS[*]}"
+        echo "You may need to install them manually:"
+        echo "  uv pip install ${MISSING_DEPS[*]}"
+    fi
+else
+    echo "✓ All additional dependencies are already installed"
+fi
+echo ""
 
 echo "SAM3 dependencies installation completed."
 echo ""

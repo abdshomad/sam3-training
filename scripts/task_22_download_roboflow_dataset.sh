@@ -29,15 +29,24 @@ elif [ ! -f ".venv/bin/activate" ]; then
 fi
 
 # Load environment variables from .env file if it exists
-if [ -f ".env" ]; then
+if [ -f "${PROJECT_ROOT}/.env" ]; then
     echo "Loading environment variables from .env file..."
     # Source .env file, but don't fail if it doesn't export ROBOFLOW_API_KEY
     set +e  # Temporarily disable exit on error for sourcing
-    source .env
+    source "${PROJECT_ROOT}/.env"
     set -e  # Re-enable exit on error
     echo "✓ Loaded .env file"
 else
     echo "Note: .env file not found, using environment variables only"
+fi
+
+# Load RF100-VL specific environment variables from .env.rf100vl if it exists
+if [ -f "${PROJECT_ROOT}/.env.rf100vl" ]; then
+    echo "Loading RF100-VL environment variables from .env.rf100vl file..."
+    set +e  # Temporarily disable exit on error for sourcing
+    source "${PROJECT_ROOT}/.env.rf100vl"
+    set -e  # Re-enable exit on error
+    echo "✓ Loaded .env.rf100vl file"
 fi
 
 # Check if submodule is initialized
@@ -98,7 +107,7 @@ fi
 
 # Install rf100vl package if not already installed
 # Check if package is installed using the active Python (venv or system)
-if ! python -c "import rf100vl" 2>/dev/null; then
+if ! uv run python -c "import rf100vl" 2>/dev/null; then
     echo "Installing rf100vl package in editable mode..."
     cd rf100-vl
     # Use uv pip install for local editable package installation
@@ -123,7 +132,7 @@ echo "This may take a while depending on your internet connection..."
 echo ""
 
 # Use the active Python (from venv if activated, otherwise system)
-python << EOF
+uv run python << EOF
 import os
 from rf100vl import download_rf100vl
 
