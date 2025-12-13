@@ -324,9 +324,14 @@ if [ "${SKIP_CONFIG_VALIDATION}" = false ] && [ "${DRY_RUN}" = false ]; then
                 
                 # Auto-download if flag is set
                 if [ "${AUTO_DOWNLOAD}" = true ]; then
-                    echo "Auto-download enabled. Downloading ODinW dataset..."
+                    echo "Auto-download enabled. Downloading missing ODinW datasets..."
                     echo "----------------------------------------"
-                    bash "${PROJECT_ROOT}/scripts/task_23_download_odinw_dataset.sh" "${ODINW_ROOT:-${ODINW_DATA_ROOT:-}}"
+                    # Use --missing-only to only download what's needed
+                    DOWNLOAD_ARGS=("--missing-only" "--config" "${RESOLVED_CONFIG}")
+                    if [ -n "${ODINW_ROOT:-${ODINW_DATA_ROOT:-}}" ]; then
+                        DOWNLOAD_ARGS+=("${ODINW_ROOT:-${ODINW_DATA_ROOT:-}}")
+                    fi
+                    bash "${PROJECT_ROOT}/scripts/task_23_download_odinw_dataset.sh" "${DOWNLOAD_ARGS[@]}"
                     DOWNLOAD_EXIT_CODE=$?
                     
                     if [ ${DOWNLOAD_EXIT_CODE} -eq 0 ]; then
@@ -355,9 +360,14 @@ if [ "${SKIP_CONFIG_VALIDATION}" = false ] && [ "${DRY_RUN}" = false ]; then
                     read -r response
                     if [[ "${response}" =~ ^[Yy]$ ]]; then
                         echo ""
-                        echo "Downloading ODinW dataset..."
+                        echo "Downloading missing ODinW datasets..."
                         echo "----------------------------------------"
-                        bash "${PROJECT_ROOT}/scripts/task_23_download_odinw_dataset.sh" "${ODINW_ROOT:-${ODINW_DATA_ROOT:-}}"
+                        # Use --missing-only to only download what's needed
+                        DOWNLOAD_ARGS=("--missing-only" "--config" "${RESOLVED_CONFIG}")
+                        if [ -n "${ODINW_ROOT:-${ODINW_DATA_ROOT:-}}" ]; then
+                            DOWNLOAD_ARGS+=("${ODINW_ROOT:-${ODINW_DATA_ROOT:-}}")
+                        fi
+                        bash "${PROJECT_ROOT}/scripts/task_23_download_odinw_dataset.sh" "${DOWNLOAD_ARGS[@]}"
                         DOWNLOAD_EXIT_CODE=$?
                         
                         if [ ${DOWNLOAD_EXIT_CODE} -eq 0 ]; then
