@@ -48,6 +48,7 @@ SKIP_ENV_SETUP=false
 SKIP_DATA_VALIDATION=false
 DRY_RUN=false
 USE_RESOLVED_CONFIG=true
+AUTO_DOWNLOAD=false
 
 # Map config type to base config file
 case "${CONFIG_TYPE}" in
@@ -156,6 +157,10 @@ while [[ $# -gt 0 ]]; do
             DRY_RUN=true
             shift
             ;;
+        --auto-download)
+            AUTO_DOWNLOAD=true
+            shift
+            ;;
         --help|-h)
             cat << EOF
 Usage: $0 [OPTIONS]
@@ -185,6 +190,7 @@ Control Options:
   --skip-config-validation  Skip config validation step
   --skip-env-setup          Skip environment setup step
   --skip-data-validation    Skip data validation step
+  --auto-download           Automatically download missing datasets when validation fails
   --dry-run                 Show what would be done without executing
   --help, -h                Show this help message
 
@@ -316,8 +322,35 @@ if [ "${SKIP_CONFIG_VALIDATION}" = false ] && [ "${DRY_RUN}" = false ]; then
                 echo "ODinW dataset appears to be missing or incomplete."
                 echo ""
                 
+                # Auto-download if flag is set
+                if [ "${AUTO_DOWNLOAD}" = true ]; then
+                    echo "Auto-download enabled. Downloading ODinW dataset..."
+                    echo "----------------------------------------"
+                    bash "${PROJECT_ROOT}/scripts/task_23_download_odinw_dataset.sh" "${ODINW_ROOT:-${ODINW_DATA_ROOT:-}}"
+                    DOWNLOAD_EXIT_CODE=$?
+                    
+                    if [ ${DOWNLOAD_EXIT_CODE} -eq 0 ]; then
+                        echo ""
+                        echo "✓ Dataset download completed. Re-running validation..."
+                        echo ""
+                        # Re-run validation
+                        uv run python scripts/task_62_config_validation.py "${VALIDATE_ARGS[@]}"
+                        REVALIDATION_EXIT_CODE=$?
+                        if [ ${REVALIDATION_EXIT_CODE} -eq 0 ]; then
+                            echo "✓ Validation passed after dataset download!"
+                            echo ""
+                        else
+                            echo "⚠ Validation still failed after download. Please check the errors above."
+                            exit 1
+                        fi
+                    else
+                        echo ""
+                        echo "ERROR: Dataset download failed (exit code: ${DOWNLOAD_EXIT_CODE})"
+                        echo "Please download the dataset manually or check the errors above."
+                        exit 1
+                    fi
                 # Offer to download if running interactively
-                if [ -t 0 ] && [ -t 1 ]; then
+                elif [ -t 0 ] && [ -t 1 ]; then
                     echo "Would you like to download the ODinW dataset now? (y/n)"
                     read -r response
                     if [[ "${response}" =~ ^[Yy]$ ]]; then
@@ -355,13 +388,16 @@ if [ "${SKIP_CONFIG_VALIDATION}" = false ] && [ "${DRY_RUN}" = false ]; then
                         echo "Or set ODINW_DATA_ROOT environment variable to your dataset location."
                         echo ""
                         echo "Note: You can skip validation with --skip-config-validation,"
-                        echo "      but training will likely fail if files are missing."
+                        echo "      or use --auto-download to automatically download missing datasets."
                         exit 1
                     fi
                 else
                     # Non-interactive mode - just show instructions
                     echo "Quick fix - Download ODinW dataset:"
                     echo "  bash scripts/task_23_download_odinw_dataset.sh"
+                    echo ""
+                    echo "Or re-run with --auto-download flag to download automatically:"
+                    echo "  ./train_odinw.sh --auto-download"
                     echo ""
                     echo "Or set ODINW_DATA_ROOT environment variable to your dataset location."
                     echo ""
