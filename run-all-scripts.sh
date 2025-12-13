@@ -54,6 +54,16 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Load environment variables from .env file if it exists
+if [ -f "${REPO_ROOT}/.env" ]; then
+    echo "Loading environment variables from .env file..."
+    set -a  # Automatically export all variables
+    source "${REPO_ROOT}/.env"
+    set +a  # Turn off automatic export
+    echo "✓ Loaded .env file"
+    echo ""
+fi
+
 echo "=========================================="
 echo "Running All Task Scripts"
 echo "=========================================="
@@ -63,25 +73,23 @@ echo "Continue on error: $CONTINUE_ON_ERROR"
 echo ""
 
 # Find all .sh scripts in the scripts directory
-# This will find: task_111, task_112, task_113, task_114, task_121, task_122, task_123, task_124, task_125, etc.
+# Scripts are dynamically discovered - see plan/plan.md for expected tasks
 SCRIPTS=($(find "$SCRIPTS_DIR" -maxdepth 1 -name "task_*.sh" -type f | sort))
 
 if [ ${#SCRIPTS[@]} -eq 0 ]; then
     echo -e "${YELLOW}No task scripts found in $SCRIPTS_DIR${NC}"
     echo ""
-    echo "Expected scripts:"
-    echo "  - task_111_gpu_availability_check.sh"
-    echo "  - task_112_cuda_toolkit_verification.sh"
-    echo "  - task_113_vram_health_check.sh"
-    echo "  - task_114_disk_space_allocation.sh"
-    echo "  - task_121_clone_sam3_repository.sh"
-    echo "  - task_122_create_virtual_environment.sh"
-    echo "  - task_123_install_pytorch.sh"
-    echo "  - task_124_install_sam3_dependencies.sh"
-    echo "  - task_125_download_pretrained_weights.sh"
-    echo "  - task_131_wandb_initialization.sh"
-    echo "  - task_132_dvc_initialization.sh"
-    echo "  - task_133_configure_remote_storage.sh"
+    echo "Please refer to plan/plan.md for the list of expected tasks."
+    echo "Scripts should be named following the pattern: task_[ID]_[description].sh"
+    echo ""
+    echo "Example expected tasks from plan:"
+    echo "  - Hardware checks: 1.1.1 (GPU), 1.1.2 (CUDA), 1.1.3 (VRAM), 1.1.4 (Disk)"
+    echo "  - Environment: 1.2.1 (Clone), 1.2.2 (Venv), 1.2.3 (PyTorch), 1.2.4 (SAM3), 1.2.5 (Weights)"
+    echo "  - Monitoring: 1.3.1 (WandB), 1.3.2 (DVC), 1.3.3 (Remote Storage)"
+    echo "  - Data: 2.1-2.5 (Data validation and downloads)"
+    echo "  - Arguments: 3.0-3.3 (Argument parsing)"
+    echo "  - Execution: 4.0-4.3 (Command construction)"
+    echo "  - Post-execution: 5.0-5.2 (Monitoring and feedback)"
     exit 0
 fi
 
@@ -90,49 +98,6 @@ for script in "${SCRIPTS[@]}"; do
     echo "  - $(basename "$script")"
 done
 echo ""
-
-# Verify we found the expected scripts
-EXPECTED_SCRIPTS=(
-    "task_111_gpu_availability_check.sh"
-    "task_112_cuda_toolkit_verification.sh"
-    "task_113_vram_health_check.sh"
-    "task_114_disk_space_allocation.sh"
-    "task_121_clone_sam3_repository.sh"
-    "task_122_create_virtual_environment.sh"
-    "task_123_install_pytorch.sh"
-    "task_124_install_sam3_dependencies.sh"
-    "task_125_download_pretrained_weights.sh"
-    "task_131_wandb_initialization.sh"
-    "task_132_dvc_initialization.sh"
-    "task_133_configure_remote_storage.sh"
-)
-
-FOUND_SCRIPT_NAMES=()
-for script in "${SCRIPTS[@]}"; do
-    FOUND_SCRIPT_NAMES+=("$(basename "$script")")
-done
-
-MISSING_SCRIPTS=()
-for expected in "${EXPECTED_SCRIPTS[@]}"; do
-    found=false
-    for found_script in "${FOUND_SCRIPT_NAMES[@]}"; do
-        if [ "$found_script" = "$expected" ]; then
-            found=true
-            break
-        fi
-    done
-    if [ "$found" = false ]; then
-        MISSING_SCRIPTS+=("$expected")
-    fi
-done
-
-if [ ${#MISSING_SCRIPTS[@]} -gt 0 ]; then
-    echo -e "${YELLOW}Warning: The following expected scripts were not found:${NC}"
-    for missing in "${MISSING_SCRIPTS[@]}"; do
-        echo -e "  ${YELLOW}⚠ $missing${NC}"
-    done
-    echo ""
-fi
 
 # Track results
 SUCCESS_COUNT=0

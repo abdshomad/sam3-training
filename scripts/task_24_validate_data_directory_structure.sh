@@ -16,6 +16,13 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # Change to project root
 cd "${PROJECT_ROOT}"
 
+# Load environment variables from .env file if it exists
+if [ -f "${PROJECT_ROOT}/.env" ]; then
+    set -a  # Automatically export all variables
+    source "${PROJECT_ROOT}/.env"
+    set +a  # Turn off automatic export
+fi
+
 # Initialize variables
 DATASET_TYPE="both"  # Default: validate both if roots are available
 
@@ -182,6 +189,7 @@ validate_odinw_structure() {
     # Find at least one valid supercategory structure
     FOUND_VALID_STRUCTURE=0
     ERRORS=0
+    WARNINGS=0
     
     # Check each subdirectory in the root
     for SUPERCATEGORY in "${ODINW_ROOT}"/*; do
@@ -207,10 +215,50 @@ validate_odinw_structure() {
                     FOUND_VALID_STRUCTURE=1
                 fi
                 continue
-            else
-                echo "  WARNING: ${SUPERCATEGORY_NAME} does not have expected structure (no large/ or train/valid/test/)"
-                ERRORS=$((ERRORS + 1))
-                continue
+            fi
+            
+            # Check for alternative structures (e.g., .coco directories, which are valid dataset formats)
+            # Look for subdirectories that contain train/valid/test
+            FOUND_ALTERNATIVE=false
+            for item in "${SUPERCATEGORY}"/*; do
+                if [ ! -d "${item}" ]; then
+                    continue
+                fi
+                
+                # Check if this subdirectory contains train/valid/test structure
+                ITEM_TRAIN="${item}/train"
+                ITEM_VALID="${item}/valid"
+                ITEM_TEST="${item}/test"
+                
+                if [ -d "${ITEM_TRAIN}" ] || [ -d "${ITEM_VALID}" ] || [ -d "${ITEM_TEST}" ]; then
+                    # Found valid structure with intermediate directory (e.g., .coco format)
+                    if [ ${FOUND_VALID_STRUCTURE} -eq 0 ]; then
+                        ITEM_NAME="$(basename "${item}")"
+                        echo "  ✓ Found valid structure in ${SUPERCATEGORY_NAME}/${ITEM_NAME}/ (with intermediate directory)"
+                        FOUND_VALID_STRUCTURE=1
+                        FOUND_ALTERNATIVE=true
+                        break
+                    fi
+                fi
+            done
+            
+            if [ "${FOUND_ALTERNATIVE}" = false ]; then
+                # Check for dataset files directly (images or annotations)
+                HAS_ANNOTATIONS=false
+                if find "${SUPERCATEGORY}" -maxdepth 2 -type f \( -name "*.json" -o -name "*.xml" -o -name "*.txt" -o -name "*.jpg" -o -name "*.png" \) 2>/dev/null | head -1 | grep -q .; then
+                    HAS_ANNOTATIONS=true
+                fi
+                
+                if [ "${HAS_ANNOTATIONS}" = true ]; then
+                    # Found dataset files, may be valid but not standard structure
+                    if [ ${FOUND_VALID_STRUCTURE} -eq 0 ]; then
+                        echo "  ✓ Found dataset files in ${SUPERCATEGORY_NAME} (alternative format, may require conversion)"
+                        FOUND_VALID_STRUCTURE=1
+                    fi
+                else
+                    echo "  WARNING: ${SUPERCATEGORY_NAME} does not have expected structure (no large/ or train/valid/test/)"
+                    WARNINGS=$((WARNINGS + 1))
+                fi
             fi
         fi
         

@@ -16,6 +16,13 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # Change to project root
 cd "${PROJECT_ROOT}"
 
+# Load environment variables from .env file if it exists
+if [ -f "${PROJECT_ROOT}/.env" ]; then
+    set -a  # Automatically export all variables
+    source "${PROJECT_ROOT}/.env"
+    set +a  # Turn off automatic export
+fi
+
 # Check if virtual environment is active (reuse logic from task 1.1)
 if [ -z "${VIRTUAL_ENV}" ] && [ -z "${CONDA_DEFAULT_ENV}" ]; then
     if [ ! -f ".venv/bin/activate" ]; then

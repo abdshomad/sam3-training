@@ -16,6 +16,13 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # Change to project root
 cd "${PROJECT_ROOT}"
 
+# Load environment variables from .env file if it exists
+if [ -f "${PROJECT_ROOT}/.env" ]; then
+    set -a  # Automatically export all variables
+    source "${PROJECT_ROOT}/.env"
+    set +a  # Turn off automatic export
+fi
+
 # Initialize command components
 BASE_CMD="python -m sam3.train.train"
 CONFIG_ARG=""

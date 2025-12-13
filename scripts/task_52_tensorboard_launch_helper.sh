@@ -16,8 +16,15 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # Change to project root
 cd "${PROJECT_ROOT}"
 
+# Load environment variables from .env file if it exists
+if [ -f "${PROJECT_ROOT}/.env" ]; then
+    set -a  # Automatically export all variables
+    source "${PROJECT_ROOT}/.env"
+    set +a  # Turn off automatic export
+fi
+
 EXPERIMENT_LOG_DIR=""
-TENSORBOARD_PORT="6006"
+TENSORBOARD_PORT="${TENSORBOARD_PORT:-6006}"
 LAUNCH_TENSORBOARD=false
 
 # Parse command-line arguments
@@ -47,6 +54,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Environment Variables:"
             echo "  SAM3_EXPERIMENT_LOG_DIR  Experiment log directory"
+            echo "  TENSORBOARD_PORT         TensorBoard port (default: 6006)"
             echo ""
             echo "  -h, --help               Show this help message"
             exit 0

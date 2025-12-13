@@ -83,22 +83,29 @@ if [ -f ".venv/bin/activate" ]; then
     source .venv/bin/activate
     echo "✓ Virtual environment activated"
     
-    # Ensure pip is available (needed for uv pip install commands)
-    if ! python -m pip --version &> /dev/null; then
-        echo "Installing pip in virtual environment..."
-        python -m ensurepip --upgrade || {
-            echo "WARNING: ensurepip failed, pip may not be available"
-        }
-        echo "✓ Pip setup completed"
-    fi
-    
     # Install dependencies from pyproject.toml using uv sync
+    # Skip uv sync if SAM3 is already installed (to avoid uninstalling it)
     if [ -f "pyproject.toml" ]; then
-        echo "Installing dependencies from pyproject.toml..."
-        uv sync || {
-            echo "WARNING: uv sync failed, but continuing..."
-        }
-        echo "✓ Dependencies synced from pyproject.toml"
+        # Check if SAM3 is already installed before syncing
+        if uv pip show sam3 &>/dev/null; then
+            SAM3_EDITABLE=$(uv pip show sam3 2>/dev/null | grep "^Editable project location:" | cut -d: -f2 | xargs)
+            if [ -n "${SAM3_EDITABLE}" ] && echo "${SAM3_EDITABLE}" | grep -q "${PROJECT_ROOT}/sam3"; then
+                echo "SAM3 already installed, skipping uv sync to avoid reinstallation..."
+                echo "✓ Skipped uv sync (SAM3 already installed)"
+            else
+                echo "Installing dependencies from pyproject.toml..."
+                uv sync || {
+                    echo "WARNING: uv sync failed, but continuing..."
+                }
+                echo "✓ Dependencies synced from pyproject.toml"
+            fi
+        else
+            echo "Installing dependencies from pyproject.toml..."
+            uv sync || {
+                echo "WARNING: uv sync failed, but continuing..."
+            }
+            echo "✓ Dependencies synced from pyproject.toml"
+        fi
     fi
 else
     echo "ERROR: Failed to activate virtual environment"

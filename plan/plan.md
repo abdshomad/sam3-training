@@ -1,19 +1,79 @@
 PLAN
 
-**1.0 - Environment Preparation**
+**1.0 - Pre-Environment Hardware Checks**
+*   **Description:** Verify hardware prerequisites (GPU, CUDA, VRAM, disk space) before setting up the environment.
+*   **Status:** Pending
+*   **Implementation Datetime:** TBD
+
+**1.1.1 - GPU Availability Check**
+*   **Description:** Check for NVIDIA GPU availability using nvidia-smi. Verify GPU is accessible and report GPU count and model information.
+*   **Status:** Pending
+*   **Implementation Datetime:** TBD
+
+**1.1.2 - CUDA Toolkit Verification**
+*   **Description:** Verify CUDA toolkit installation and version compatibility. Check that CUDA version is compatible with PyTorch requirements.
+*   **Status:** Pending
+*   **Implementation Datetime:** TBD
+
+**1.1.3 - VRAM Health Check**
+*   **Description:** Check GPU VRAM availability and health. Verify sufficient free VRAM for training and detect potential memory issues.
+*   **Status:** Pending
+*   **Implementation Datetime:** TBD
+
+**1.1.4 - Disk Space Allocation**
+*   **Description:** Verify sufficient disk space for datasets, checkpoints, and logs. Check available space in target directories and warn if space is insufficient.
+*   **Status:** Pending
+*   **Implementation Datetime:** TBD
+
+**1.2.0 - Environment Preparation**
 *   **Description:** Setup the necessary Python environment and dependencies required by SAM3 before attempting to run scripts.
 *   **Status:** Script Created
 *   **Implementation Datetime:** 2025-12-12 21:43:32
 
-**1.1 - Verify Python Environment**
-*   **Description:** Add checks to ensure a virtual environment is active (e.g., Conda or venv) to prevent polluting the system Python.
+**1.2.1 - Clone SAM3 Repository**
+*   **Description:** Clone the SAM3 repository if it doesn't exist, or verify the sam3 submodule is properly initialized. Handle git submodule initialization if needed.
+*   **Status:** Pending
+*   **Implementation Datetime:** TBD
+
+**1.2.2 - Create Virtual Environment**
+*   **Description:** Create and configure a Python virtual environment using uv. Verify Python version compatibility (3.9-3.12), activate venv, and ensure pip is available.
 *   **Status:** Script Created
 *   **Implementation Datetime:** 2025-12-12 21:43:32
 
-**1.2 - Install SAM3 Dependencies**
+**1.2.3 - Install PyTorch**
+*   **Description:** Install PyTorch with CUDA support matching the system's CUDA version. Verify installation and GPU accessibility.
+*   **Status:** Pending
+*   **Implementation Datetime:** TBD
+
+**1.2.4 - Install SAM3 Dependencies**
 *   **Description:** Implement the installation command `pip install -e ".[train]"` inside the `sam3` directory as specified in the "Installation" section. Add a check to skip if already installed.
 *   **Status:** Script Created
 *   **Implementation Datetime:** 2025-12-12 21:43:32
+
+**1.2.5 - Download Pretrained Weights**
+*   **Description:** Download SAM3 pretrained model weights if not already present. Verify weight files exist and are complete.
+*   **Status:** Pending
+*   **Implementation Datetime:** TBD
+
+**1.3.0 - Monitoring and Tracking Setup**
+*   **Description:** Initialize and configure monitoring tools (WandB, DVC) and remote storage for experiment tracking and data versioning.
+*   **Status:** Pending
+*   **Implementation Datetime:** TBD
+
+**1.3.1 - WandB Initialization**
+*   **Description:** Initialize WandB for experiment tracking. Check for WANDB_API_KEY environment variable, login to WandB, and verify project configuration.
+*   **Status:** Pending
+*   **Implementation Datetime:** TBD
+
+**1.3.2 - DVC Initialization**
+*   **Description:** Initialize DVC (Data Version Control) for data and model versioning. Configure DVC remote storage if specified.
+*   **Status:** Pending
+*   **Implementation Datetime:** TBD
+
+**1.3.3 - Configure Remote Storage**
+*   **Description:** Configure remote storage for DVC (S3, GCS, Azure, etc.). Verify credentials and connectivity to remote storage.
+*   **Status:** Pending
+*   **Implementation Datetime:** TBD
 
 **2.0 - Data Validation and Configuration**
 *   **Description:** Ensure data paths and configuration files exist and are correctly structured before invoking the Python script.

@@ -31,8 +31,8 @@ cd "${SAM3_DIR}"
 
 # Check if SAM3 is already installed in the current Python environment
 echo "Checking if SAM3 is already installed..."
-if python -m pip show sam3 &>/dev/null; then
-    SAM3_INFO=$(python -m pip show sam3 2>/dev/null)
+if uv pip show sam3 &>/dev/null; then
+    SAM3_INFO=$(uv pip show sam3 2>/dev/null)
     SAM3_LOCATION=$(echo "${SAM3_INFO}" | grep "^Location:" | cut -d: -f2 | xargs)
     SAM3_EDITABLE=$(echo "${SAM3_INFO}" | grep "^Editable project location:" | cut -d: -f2 | xargs)
     
@@ -60,16 +60,37 @@ if ! command -v uv &> /dev/null; then
     exit 1
 fi
 
-# Ensure dependencies from pyproject.toml are installed via uv sync
-if [ -f "${PROJECT_ROOT}/pyproject.toml" ]; then
-    echo "Ensuring dependencies from pyproject.toml are installed..."
-    cd "${PROJECT_ROOT}"
-    uv sync --quiet || {
-        echo "WARNING: uv sync failed, but continuing with SAM3 installation..."
-    }
-    cd "${SAM3_DIR}"
+# Skip uv sync if SAM3 is already properly installed
+# This prevents unnecessary reinstallation
+if uv pip show sam3 &>/dev/null; then
+    SAM3_EDITABLE=$(uv pip show sam3 2>/dev/null | grep "^Editable project location:" | cut -d: -f2 | xargs)
+    if [ -n "${SAM3_EDITABLE}" ] && echo "${SAM3_EDITABLE}" | grep -q "${SAM3_DIR}"; then
+        echo "SAM3 already installed, skipping root pyproject.toml sync to avoid reinstallation..."
+    else
+        # Ensure dependencies from pyproject.toml are installed via uv sync
+        if [ -f "${PROJECT_ROOT}/pyproject.toml" ]; then
+            echo "Ensuring dependencies from pyproject.toml are installed..."
+            cd "${PROJECT_ROOT}"
+            uv sync --quiet || {
+                echo "WARNING: uv sync failed, but continuing with SAM3 installation..."
+            }
+            cd "${SAM3_DIR}"
+        else
+            echo "Note: pyproject.toml not found at project root, skipping uv sync"
+        fi
+    fi
 else
-    echo "Note: pyproject.toml not found at project root, skipping uv sync"
+    # Ensure dependencies from pyproject.toml are installed via uv sync
+    if [ -f "${PROJECT_ROOT}/pyproject.toml" ]; then
+        echo "Ensuring dependencies from pyproject.toml are installed..."
+        cd "${PROJECT_ROOT}"
+        uv sync --quiet || {
+            echo "WARNING: uv sync failed, but continuing with SAM3 installation..."
+        }
+        cd "${SAM3_DIR}"
+    else
+        echo "Note: pyproject.toml not found at project root, skipping uv sync"
+    fi
 fi
 
 # Check Python version
