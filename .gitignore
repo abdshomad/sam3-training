@@ -1,3 +1,4 @@
 experiments/**
 data/**
 .env
+.env.odinw
