@@ -23,21 +23,38 @@ if ! command -v uv &> /dev/null; then
     exit 1
 fi
 
-echo "Step 1: Creating virtual environment..."
-if [ ! -d "${PROJECT_ROOT}/.venv" ]; then
-    uv venv
-    echo "✓ Virtual environment created"
+echo "Step 1: Installing Python 3.12..."
+if ! uv python list | grep -q "3.12"; then
+    uv python install 3.12
+    echo "✓ Python 3.12 installed"
 else
-    echo "✓ Virtual environment already exists"
+    echo "✓ Python 3.12 already installed"
 fi
 echo ""
 
-echo "Step 2: Installing dependencies..."
+echo "Step 2: Creating virtual environment with Python 3.12..."
+if [ ! -d "${PROJECT_ROOT}/.venv" ]; then
+    uv venv --python 3.12
+    echo "✓ Virtual environment created with Python 3.12"
+else
+    echo "✓ Virtual environment already exists"
+    # Ensure it's using Python 3.12
+    VENV_PYTHON_VERSION=$("${PROJECT_ROOT}/.venv/bin/python" --version 2>&1 | grep -oP '3\.\d+' || echo "")
+    if [ "${VENV_PYTHON_VERSION}" != "3.12" ]; then
+        echo "Note: Existing venv uses Python ${VENV_PYTHON_VERSION}, recreating with Python 3.12..."
+        rm -rf "${PROJECT_ROOT}/.venv"
+        uv venv --python 3.12
+        echo "✓ Virtual environment recreated with Python 3.12"
+    fi
+fi
+echo ""
+
+echo "Step 3: Installing dependencies..."
 uv sync
 echo "✓ Dependencies installed"
 echo ""
 
-echo "Step 3: Verifying installation..."
+echo "Step 4: Verifying installation..."
 if uv run python -c "from webapp.main import app; print('✓ Web app imports successfully')" 2>/dev/null; then
     echo "✓ Installation verified"
 else

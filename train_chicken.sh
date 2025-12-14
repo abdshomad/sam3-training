@@ -1,9 +1,9 @@
 #!/bin/bash
-# Task ID: 7.1
-# Description: Training Launch Script for RF100-VL
-# Created: 2025-12-13
+# Task ID: 7.3
+# Description: Training Launch Script for Chicken Detection Dataset
+# Created: 2025-12-15
 #
-# This script launches rf100-vl training using the run_training.sh infrastructure
+# This script launches chicken detection training using the run_training.sh infrastructure
 # with automatic config resolution and validation.
 
 set -e
@@ -23,24 +23,23 @@ if [ -f "${PROJECT_ROOT}/.env" ]; then
     set +a  # Turn off automatic export
 fi
 
-# Load RF100-VL specific environment variables from .env.rf100vl if it exists
-# This file contains RF100-VL specific settings and overrides
-if [ -f "${PROJECT_ROOT}/.env.rf100vl" ]; then
+# Load Chicken Detection specific environment variables from .env.chicken if it exists
+# This file contains Chicken Detection specific settings and overrides
+if [ -f "${PROJECT_ROOT}/.env.chicken" ]; then
     set -a  # Automatically export all variables
-    source "${PROJECT_ROOT}/.env.rf100vl"
+    source "${PROJECT_ROOT}/.env.chicken"
     set +a  # Turn off automatic export
 fi
 
-# Default values (can be overridden by .env.rf100vl or CLI args)
-BASE_CONFIG="sam3/sam3/train/configs/roboflow_v100/roboflow_v100_full_ft_100_images.yaml"
-SUPERCATEGORY="${RF100VL_DEFAULT_SUPERCATEGORY:-all}"  # Default to all supercategories (job array)
-MODE="${RF100VL_DEFAULT_MODE:-local}"
-NUM_GPUS="${RF100VL_DEFAULT_NUM_GPUS:-}"
+# Default values (can be overridden by .env.chicken or CLI args)
+BASE_CONFIG="sam3/sam3/train/configs/chicken_detection/chicken_detection_train.yaml"
+MODE="${CHICKEN_DEFAULT_MODE:-local}"
+NUM_GPUS="${CHICKEN_DEFAULT_NUM_GPUS:-}"
 NUM_NODES=""
 PARTITION=""
 ACCOUNT=""
 QOS=""
-ROBOFLOW_ROOT="${ROBOFLOW_VL_100_ROOT:-}"
+CHICKEN_ROOT="${CHICKEN_DATA_ROOT:-}"
 EXPERIMENT_DIR="${EXPERIMENT_LOG_DIR:-}"
 BPE_PATH="${BPE_PATH:-}"
 SKIP_CONFIG_RESOLUTION=false
@@ -53,10 +52,6 @@ USE_RESOLVED_CONFIG=true
 # Parse command-line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --supercategory)
-            SUPERCATEGORY="$2"
-            shift 2
-            ;;
         --mode)
             MODE="$2"
             shift 2
@@ -81,8 +76,8 @@ while [[ $# -gt 0 ]]; do
             QOS="$2"
             shift 2
             ;;
-        --roboflow-root)
-            ROBOFLOW_ROOT="$2"
+        --chicken-root)
+            CHICKEN_ROOT="$2"
             shift 2
             ;;
         --experiment-dir)
@@ -121,10 +116,7 @@ while [[ $# -gt 0 ]]; do
             cat << EOF
 Usage: $0 [OPTIONS]
 
-Launch RF100-VL training with automatic config resolution and validation.
-
-Options:
-  --supercategory NAME     Supercategory to train on (default: 'all' for job array)
+Launch Chicken Detection training with automatic config resolution and validation.
 
 Execution Options:
   --mode MODE              Execution mode: local or cluster (default: local)
@@ -135,10 +127,10 @@ Execution Options:
   --qos NAME               SLURM QOS setting (cluster mode)
 
 Path Options:
-  --roboflow-root PATH     Path to Roboflow VL-100 dataset root
+  --chicken-root PATH      Path to Chicken Detection dataset root (data/chicken-and-not-chicken/)
   --experiment-dir PATH    Path to experiment log directory
   --bpe-path PATH          Path to BPE vocabulary file
-  --base-config PATH       Base config file (default: roboflow_v100_full_ft_100_images.yaml)
+  --base-config PATH       Base config file (default: chicken_detection_train.yaml)
 
 Control Options:
   --skip-config-resolution Skip config path resolution step
@@ -149,23 +141,20 @@ Control Options:
   --help, -h               Show this help message
 
 Environment Variables:
-  ROBOFLOW_VL_100_ROOT     Path to Roboflow dataset root
+  CHICKEN_DATA_ROOT        Path to Chicken Detection dataset root
   EXPERIMENT_LOG_DIR        Path to experiment log directory
   BPE_PATH                  Path to BPE vocabulary file
 
 Examples:
-  # Local training on all supercategories (default)
+  # Local training
   $0 --mode local --num-gpus 1
 
-  # Local training on single supercategory
-  $0 --supercategory actions --mode local --num-gpus 1
-
-  # Local training with custom paths (all supercategories by default)
+  # Local training with custom paths
   $0 --mode local --num-gpus 1 \\
-     --roboflow-root ./data/roboflow_vl_100 \\
+     --chicken-root ./data/chicken-and-not-chicken \\
      --experiment-dir ./experiments/logs
 
-  # Cluster training (all supercategories by default)
+  # Cluster training
   $0 --mode cluster --num-gpus 8 --num-nodes 2 \\
      --partition gpu_partition --account my_account
 
@@ -182,11 +171,8 @@ EOF
     esac
 done
 
-# Supercategory defaults to "all" if not specified
-# No validation needed - default is already set above
-
 echo "=========================================="
-echo "RF100-VL Training Launch Script"
+echo "Chicken Detection Training Launch Script"
 echo "=========================================="
 echo ""
 
@@ -242,7 +228,7 @@ if [ "${SKIP_CONFIG_RESOLUTION}" = false ]; then
     
     # Generate resolved config filename
     TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-    RESOLVED_CONFIG="${RESOLVED_CONFIG_DIR}/resolved_config_${SUPERCATEGORY}_${TIMESTAMP}.yaml"
+    RESOLVED_CONFIG="${RESOLVED_CONFIG_DIR}/chicken_resolved_config_${TIMESTAMP}.yaml"
     
     # Build config resolution command
     RESOLVE_ARGS=(
@@ -250,8 +236,8 @@ if [ "${SKIP_CONFIG_RESOLUTION}" = false ]; then
         --output "${RESOLVED_CONFIG}"
     )
     
-    if [ -n "${ROBOFLOW_ROOT}" ]; then
-        RESOLVE_ARGS+=(--roboflow-root "${ROBOFLOW_ROOT}")
+    if [ -n "${CHICKEN_ROOT}" ]; then
+        RESOLVE_ARGS+=(--chicken-root "${CHICKEN_ROOT}")
     fi
     
     if [ -n "${EXPERIMENT_DIR}" ]; then
@@ -267,15 +253,23 @@ if [ "${SKIP_CONFIG_RESOLUTION}" = false ]; then
     fi
     
     # Run config resolution
-    if [ "${DRY_RUN}" = true ]; then
-        echo "Would run: uv run python scripts/task_61_config_path_resolution.py ${RESOLVE_ARGS[*]}"
-    else
-        uv run python scripts/task_61_config_path_resolution.py "${RESOLVE_ARGS[@]}"
-        if [ $? -ne 0 ]; then
-            echo "ERROR: Config path resolution failed" >&2
-            exit 1
+    # Note: We'll need to create a config resolution script for chicken dataset
+    # For now, we'll use a simple Python script or skip if not available
+    if [ -f "${PROJECT_ROOT}/scripts/task_chicken_config_path_resolution.py" ]; then
+        if [ "${DRY_RUN}" = true ]; then
+            echo "Would run: uv run python scripts/task_chicken_config_path_resolution.py ${RESOLVE_ARGS[*]}"
+        else
+            uv run python scripts/task_chicken_config_path_resolution.py "${RESOLVE_ARGS[@]}"
+            if [ $? -ne 0 ]; then
+                echo "ERROR: Config path resolution failed" >&2
+                exit 1
+            fi
+            echo "✓ Config resolved: ${RESOLVED_CONFIG}"
         fi
-        echo "✓ Config resolved: ${RESOLVED_CONFIG}"
+    else
+        echo "NOTE: Config resolution script not found. Using base config directly."
+        echo "      Create scripts/task_chicken_config_path_resolution.py for automatic path resolution."
+        RESOLVED_CONFIG="${BASE_CONFIG}"
     fi
     echo ""
 else
@@ -286,47 +280,10 @@ else
 fi
 
 # ============================================================================
-# Step 2: Supercategory Selection/Override
-# ============================================================================
-if [ "${SKIP_CONFIG_RESOLUTION}" = false ] && [ "${DRY_RUN}" = false ]; then
-    echo "Step 2: Setting supercategory..."
-    echo "----------------------------------------"
-    
-    # If supercategory is not 'all', we need to override it in the config
-    if [ "${SUPERCATEGORY}" != "all" ]; then
-        # Use Python to update the config
-        uv run python -c "
-import yaml
-import sys
-
-config_path = '${RESOLVED_CONFIG}'
-supercategory = '${SUPERCATEGORY}'
-
-with open(config_path, 'r') as f:
-    config = yaml.safe_load(f)
-
-# Update supercategory
-if 'roboflow_train' not in config:
-    config['roboflow_train'] = {}
-config['roboflow_train']['supercategory'] = supercategory
-
-with open(config_path, 'w') as f:
-    yaml.dump(config, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
-
-print(f'✓ Set supercategory to: {supercategory}')
-"
-        echo ""
-    else
-        echo "✓ Using job array for all supercategories"
-        echo ""
-    fi
-fi
-
-# ============================================================================
-# Step 3: Config Validation
+# Step 2: Config Validation
 # ============================================================================
 if [ "${SKIP_CONFIG_VALIDATION}" = false ] && [ "${DRY_RUN}" = false ]; then
-    echo "Step 3: Validating config..."
+    echo "Step 2: Validating config..."
     echo "----------------------------------------"
     
     VALIDATE_ARGS=(--config "${RESOLVED_CONFIG}")
@@ -346,14 +303,14 @@ if [ "${SKIP_CONFIG_VALIDATION}" = false ] && [ "${DRY_RUN}" = false ]; then
     fi
     echo ""
 else
-    echo "Skipping Step 3: Config Validation (--skip-config-validation)"
+    echo "Skipping Step 2: Config Validation (--skip-config-validation)"
     echo ""
 fi
 
 # ============================================================================
-# Step 4: Launch Training
+# Step 3: Launch Training
 # ============================================================================
-echo "Step 4: Launching training..."
+echo "Step 3: Launching training..."
 echo "----------------------------------------"
 
 # Build run_training.sh command
@@ -382,8 +339,8 @@ if [ -n "${QOS}" ]; then
     TRAINING_ARGS+=(--qos "${QOS}")
 fi
 
-if [ -n "${ROBOFLOW_ROOT}" ]; then
-    TRAINING_ARGS+=(--roboflow-root "${ROBOFLOW_ROOT}")
+if [ -n "${CHICKEN_ROOT}" ]; then
+    TRAINING_ARGS+=(--chicken-root "${CHICKEN_ROOT}")
 fi
 
 if [ "${SKIP_ENV_SETUP}" = true ]; then
@@ -404,7 +361,7 @@ if [ "${DRY_RUN}" = true ]; then
     echo "Dry run complete. Remove --dry-run to execute training."
     exit 0
 else
-    echo "Executing: bash ./run_training.sh ${TRAINING_ARGS[*]}"
+    echo "Executing: bash ./run_training.sh ${TRAINING_ARGS[@]}"
     echo ""
     bash ./run_training.sh "${TRAINING_ARGS[@]}"
     TRAINING_EXIT_CODE=$?
@@ -423,4 +380,3 @@ else
         exit ${TRAINING_EXIT_CODE}
     fi
 fi
-

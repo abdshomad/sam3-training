@@ -29,10 +29,22 @@ fi
 echo "Changing to sam3 directory: ${SAM3_DIR}"
 cd "${SAM3_DIR}"
 
-# Check if SAM3 is already installed in the current Python environment
+# Get the parent project's Python interpreter to ensure we use the correct venv
+PARENT_PYTHON="${PROJECT_ROOT}/.venv/bin/python"
+if [ ! -f "${PARENT_PYTHON}" ]; then
+    echo "ERROR: Parent project venv not found at ${PARENT_PYTHON}"
+    echo "Please run task_10_environment_preparation.sh first"
+    exit 1
+fi
+
+# Ensure we're using the parent project's venv
+export VIRTUAL_ENV="${PROJECT_ROOT}/.venv"
+export PATH="${PROJECT_ROOT}/.venv/bin:${PATH}"
+
+# Check if SAM3 is already installed in the parent project's venv
 echo "Checking if SAM3 is already installed..."
-if uv pip show sam3 &>/dev/null; then
-    SAM3_INFO=$(uv pip show sam3 2>/dev/null)
+if "${PARENT_PYTHON}" -m pip show sam3 &>/dev/null 2>&1; then
+    SAM3_INFO=$("${PARENT_PYTHON}" -m pip show sam3 2>/dev/null)
     SAM3_LOCATION=$(echo "${SAM3_INFO}" | grep "^Location:" | cut -d: -f2 | xargs)
     SAM3_EDITABLE=$(echo "${SAM3_INFO}" | grep "^Editable project location:" | cut -d: -f2 | xargs)
     
@@ -62,8 +74,8 @@ fi
 
 # Skip uv sync if SAM3 is already properly installed
 # This prevents unnecessary reinstallation
-if uv pip show sam3 &>/dev/null; then
-    SAM3_EDITABLE=$(uv pip show sam3 2>/dev/null | grep "^Editable project location:" | cut -d: -f2 | xargs)
+if "${PARENT_PYTHON}" -m pip show sam3 &>/dev/null 2>&1; then
+    SAM3_EDITABLE=$("${PARENT_PYTHON}" -m pip show sam3 2>/dev/null | grep "^Editable project location:" | cut -d: -f2 | xargs)
     if [ -n "${SAM3_EDITABLE}" ] && echo "${SAM3_EDITABLE}" | grep -q "${SAM3_DIR}"; then
         echo "SAM3 already installed, skipping root pyproject.toml sync to avoid reinstallation..."
     else
@@ -93,13 +105,13 @@ else
     fi
 fi
 
-# Check Python version
-PYTHON_VERSION=$(uv run python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+# Check Python version using parent venv
+PYTHON_VERSION=$("${PARENT_PYTHON}" -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
 echo "Python version: ${PYTHON_VERSION}"
 
 # Verify Python version is supported (3.9-3.12)
-PYTHON_MAJOR=$(python -c "import sys; print(sys.version_info.major)")
-PYTHON_MINOR=$(python -c "import sys; print(sys.version_info.minor)")
+PYTHON_MAJOR=$("${PARENT_PYTHON}" -c "import sys; print(sys.version_info.major)")
+PYTHON_MINOR=$("${PARENT_PYTHON}" -c "import sys; print(sys.version_info.minor)")
 if [ "${PYTHON_MAJOR}" -ne 3 ] || [ "${PYTHON_MINOR}" -lt 9 ] || [ "${PYTHON_MINOR}" -gt 12 ]; then
     echo "WARNING: Python ${PYTHON_VERSION} is not officially supported by SAM3 (requires 3.9-3.12)"
     echo "You may encounter compatibility issues."
@@ -107,11 +119,12 @@ if [ "${PYTHON_MAJOR}" -ne 3 ] || [ "${PYTHON_MINOR}" -lt 9 ] || [ "${PYTHON_MIN
 fi
 
 echo "Installing SAM3 package in editable mode with training dependencies..."
-echo "Running: uv pip install -e \".[train]\""
+echo "Running: uv pip install --python ${PARENT_PYTHON} -e \".[train]\""
 echo ""
 
-# Install SAM3 with training dependencies using uv pip
-if uv pip install -e ".[train]"; then
+# Install SAM3 with training dependencies using uv pip with explicit Python
+# Use --python to ensure we use the parent project's venv, not create a new one
+if uv pip install --python "${PARENT_PYTHON}" -e ".[train]"; then
     echo ""
     echo "✓ SAM3 installation completed successfully"
     echo ""
@@ -128,49 +141,9 @@ else
     exit 1
 fi
 
-# Install additional dependencies required for training but only in [notebooks] extras
-# These are needed for training but not included in [train] extras
-echo "Ensuring additional training dependencies are installed..."
-MISSING_DEPS=()
-
-# Check and install einops (required for sam3.sam.rope)
-if ! uv pip show einops &>/dev/null; then
-    MISSING_DEPS+=("einops")
-fi
-
-# Check and install decord (required for sam3.train.data.sam3_image_dataset)
-if ! uv pip show decord &>/dev/null; then
-    MISSING_DEPS+=("decord")
-fi
-
-# Check and install pycocotools (required for sam3.train.data.coco_json_loaders)
-if ! uv pip show pycocotools &>/dev/null; then
-    MISSING_DEPS+=("pycocotools")
-fi
-
-# Check and install psutil (required for sam3.model.sam3_video_predictor)
-if ! uv pip show psutil &>/dev/null; then
-    MISSING_DEPS+=("psutil")
-fi
-
-# Check and install opencv-python (required for sam3.train.transforms.point_sampling)
-if ! uv pip show opencv-python &>/dev/null; then
-    MISSING_DEPS+=("opencv-python")
-fi
-
-if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
-    echo "Installing missing dependencies: ${MISSING_DEPS[*]}..."
-    if uv pip install "${MISSING_DEPS[@]}"; then
-        echo "✓ Additional dependencies installed successfully"
-    else
-        echo "WARNING: Failed to install some dependencies, but continuing..."
-        echo "Note: The following are required for training: ${MISSING_DEPS[*]}"
-        echo "You may need to install them manually:"
-        echo "  uv pip install ${MISSING_DEPS[*]}"
-    fi
-else
-    echo "✓ All additional dependencies are already installed"
-fi
+# Additional training dependencies (decord, einops, opencv-python, psutil, pycocotools)
+# are now managed in pyproject.toml and will be installed via uv sync
+echo "✓ Additional training dependencies are managed in pyproject.toml"
 echo ""
 
 echo "SAM3 dependencies installation completed."

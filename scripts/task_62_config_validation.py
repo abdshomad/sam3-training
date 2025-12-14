@@ -294,6 +294,10 @@ def detect_dataset_type(config: dict) -> str:
     """Detect dataset type from config structure."""
     paths = config.get('paths', {})
     
+    # Check for Chicken Detection
+    if 'chicken_data_root' in paths and paths.get('chicken_data_root'):
+        return 'chicken'
+    
     # Check for ODinW
     if 'odinw_data_root' in paths and paths.get('odinw_data_root'):
         return 'odinw'
@@ -303,6 +307,8 @@ def detect_dataset_type(config: dict) -> str:
         return 'rf100vl'
     
     # Try to detect from config sections
+    if 'chicken_train' in config:
+        return 'chicken'
     if 'odinw_train' in config:
         return 'odinw'
     if 'roboflow_train' in config:
@@ -312,8 +318,41 @@ def detect_dataset_type(config: dict) -> str:
     return 'rf100vl'
 
 
+def validate_chicken_dataset_structure(chicken_root: str) -> tuple[bool, Optional[str]]:
+    """Validate that chicken_data_root has proper dataset structure."""
+    root_path = Path(chicken_root)
+    if not root_path.exists():
+        return False, f"Chicken dataset root does not exist: {chicken_root}"
+    
+    # Check for train/valid/test directories
+    train_dir = root_path / 'train'
+    valid_dir = root_path / 'valid'
+    test_dir = root_path / 'test'
+    
+    issues = []
+    
+    if not train_dir.exists():
+        issues.append(f"train directory not found: {train_dir}")
+    elif not (train_dir / '_annotations.coco.json').exists():
+        issues.append(f"train/_annotations.coco.json not found in {train_dir}")
+    
+    if not valid_dir.exists():
+        issues.append(f"valid directory not found: {valid_dir}")
+    elif not (valid_dir / '_annotations.coco.json').exists():
+        issues.append(f"valid/_annotations.coco.json not found in {valid_dir}")
+    
+    if issues:
+        return False, "; ".join(issues)
+    
+    return True, "Chicken dataset structure is valid"
+
+
 def check_supercategory_set(config: dict, dataset_type: str) -> tuple[bool, Optional[str]]:
     """Check that supercategory is set or will be set via job array."""
+    # Chicken detection doesn't use supercategories
+    if dataset_type == 'chicken':
+        return True, "Chicken detection doesn't use supercategories"
+    
     if dataset_type == 'odinw':
         # ODinW uses supercategory_tuple and all_odinw_supercategories
         odinw_train = config.get('odinw_train', {})
@@ -414,7 +453,22 @@ def main() -> int:
     all_valid = True
     
     # Check dataset root based on type
-    if dataset_type == 'odinw':
+    if dataset_type == 'chicken':
+        chicken_root = paths.get('chicken_data_root', '')
+        valid, error = check_path_exists(chicken_root, 'chicken_data_root', must_be_dir=True)
+        if valid:
+            print(f"✓ chicken_data_root: {chicken_root}")
+            # Validate chicken dataset structure
+            struct_valid, struct_msg = validate_chicken_dataset_structure(chicken_root)
+            if struct_valid:
+                print(f"  ✓ {struct_msg}")
+            else:
+                print(f"  ✗ {struct_msg}")
+                all_valid = False
+        else:
+            print(f"✗ chicken_data_root: {error}")
+            all_valid = False
+    elif dataset_type == 'odinw':
         odinw_root = paths.get('odinw_data_root', '')
         valid, error = check_path_exists(odinw_root, 'odinw_data_root', must_be_dir=True)
         if valid:
@@ -475,9 +529,13 @@ def main() -> int:
         print(f"✗ bpe_path: {error}")
         all_valid = False
     
-    # Check supercategory
+    # Check supercategory (skip for chicken)
     print("\n=== Validating Training Configuration ===")
-    supercat_valid, supercat_msg = check_supercategory_set(config, dataset_type)
+    if dataset_type == 'chicken':
+        print("✓ Chicken detection config (no supercategory needed)")
+        supercat_valid, supercat_msg = True, "N/A"
+    else:
+        supercat_valid, supercat_msg = check_supercategory_set(config, dataset_type)
     if supercat_valid:
         print(f"✓ {supercat_msg}")
     else:

@@ -7,3 +7,6 @@
 [submodule "glip"]
 	path = glip
 	url = https://github.com/microsoft/GLIP.git
+[submodule "chicken-detection-labelme-format"]
+	path = chicken-detection-labelme-format
+	url = https://github.com/abdshomad/chicken-detection-labelme-format

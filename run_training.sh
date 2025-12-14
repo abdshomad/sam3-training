@@ -251,25 +251,96 @@ if [ "${SKIP_DATA_VALIDATION}" = false ]; then
     echo "=========================================="
     echo ""
     
-    DATA_VALIDATION_ARGS=()
-    if [ -n "${ROBOFLOW_ROOT}" ]; then
-        DATA_VALIDATION_ARGS+=(--roboflow-root "${ROBOFLOW_ROOT}")
+    # Detect dataset type from config file
+    DETECTED_DATASET_TYPE=""
+    if [ -n "${CONFIG_ARG}" ] && [ -f "${CONFIG_ARG}" ]; then
+        # Check if config contains chicken_data_root or chicken_train
+        if grep -q "chicken_data_root\|chicken_train" "${CONFIG_ARG}" 2>/dev/null; then
+            DETECTED_DATASET_TYPE="chicken"
+        elif grep -q "roboflow_vl_100_root\|roboflow_train" "${CONFIG_ARG}" 2>/dev/null; then
+            DETECTED_DATASET_TYPE="roboflow"
+        elif grep -q "odinw_data_root\|odinw_train" "${CONFIG_ARG}" 2>/dev/null; then
+            DETECTED_DATASET_TYPE="odinw"
+        fi
     fi
-    if [ -n "${ODINW_ROOT}" ]; then
-        DATA_VALIDATION_ARGS+=(--odinw-root "${ODINW_ROOT}")
-    fi
-    DATA_VALIDATION_ARGS+=(--dataset-type "${DATASET_TYPE}")
     
-    # Temporarily disable exit on error for data validation (non-critical)
-    set +e
-    "${PROJECT_ROOT}/scripts/task_20_data_validation_and_configuration.sh" "${DATA_VALIDATION_ARGS[@]}"
-    DATA_VALIDATION_EXIT_CODE=$?
-    set -e
-    
-    if [ ${DATA_VALIDATION_EXIT_CODE} -ne 0 ]; then
-        echo "WARNING: Data validation failed or skipped (exit code: ${DATA_VALIDATION_EXIT_CODE})"
-        echo "This may be expected if datasets are not yet downloaded or paths are incorrect"
-        echo "Continuing with training setup..."
+    # Use detected type if available, otherwise use default
+    if [ -n "${DETECTED_DATASET_TYPE}" ]; then
+        echo "Detected dataset type: ${DETECTED_DATASET_TYPE}"
+        echo ""
+        
+        if [ "${DETECTED_DATASET_TYPE}" = "chicken" ]; then
+            # Validate chicken dataset using chicken-specific validation
+            if [ -f "${PROJECT_ROOT}/scripts/validate_chicken_coco.py" ]; then
+                CHICKEN_ROOT="${CHICKEN_DATA_ROOT:-${PROJECT_ROOT}/data/chicken-and-not-chicken}"
+                echo "Validating chicken dataset structure..."
+                set +e
+                uv run python "${PROJECT_ROOT}/scripts/validate_chicken_coco.py" --dataset-root "${CHICKEN_ROOT}" --split all
+                DATA_VALIDATION_EXIT_CODE=$?
+                set -e
+                
+                if [ ${DATA_VALIDATION_EXIT_CODE} -ne 0 ]; then
+                    echo "WARNING: Chicken dataset validation failed (exit code: ${DATA_VALIDATION_EXIT_CODE})"
+                    echo "Continuing with training setup..."
+                else
+                    echo "✓ Chicken dataset validation passed"
+                fi
+            else
+                echo "NOTE: Chicken validation script not found, skipping dataset validation"
+            fi
+        else
+            # Validate roboflow/odinw datasets using existing validation
+            DATA_VALIDATION_ARGS=()
+            if [ -n "${ROBOFLOW_ROOT}" ]; then
+                DATA_VALIDATION_ARGS+=(--roboflow-root "${ROBOFLOW_ROOT}")
+            fi
+            if [ -n "${ODINW_ROOT}" ]; then
+                DATA_VALIDATION_ARGS+=(--odinw-root "${ODINW_ROOT}")
+            fi
+            
+            # Set dataset type based on detection
+            if [ "${DETECTED_DATASET_TYPE}" = "roboflow" ]; then
+                DATA_VALIDATION_ARGS+=(--dataset-type "roboflow")
+            elif [ "${DETECTED_DATASET_TYPE}" = "odinw" ]; then
+                DATA_VALIDATION_ARGS+=(--dataset-type "odinw")
+            else
+                DATA_VALIDATION_ARGS+=(--dataset-type "${DATASET_TYPE}")
+            fi
+            
+            # Temporarily disable exit on error for data validation (non-critical)
+            set +e
+            "${PROJECT_ROOT}/scripts/task_20_data_validation_and_configuration.sh" "${DATA_VALIDATION_ARGS[@]}"
+            DATA_VALIDATION_EXIT_CODE=$?
+            set -e
+            
+            if [ ${DATA_VALIDATION_EXIT_CODE} -ne 0 ]; then
+                echo "WARNING: Data validation failed or skipped (exit code: ${DATA_VALIDATION_EXIT_CODE})"
+                echo "This may be expected if datasets are not yet downloaded or paths are incorrect"
+                echo "Continuing with training setup..."
+            fi
+        fi
+    else
+        # Fallback to original behavior if detection failed
+        echo "NOTE: Could not detect dataset type from config, using default validation"
+        DATA_VALIDATION_ARGS=()
+        if [ -n "${ROBOFLOW_ROOT}" ]; then
+            DATA_VALIDATION_ARGS+=(--roboflow-root "${ROBOFLOW_ROOT}")
+        fi
+        if [ -n "${ODINW_ROOT}" ]; then
+            DATA_VALIDATION_ARGS+=(--odinw-root "${ODINW_ROOT}")
+        fi
+        DATA_VALIDATION_ARGS+=(--dataset-type "${DATASET_TYPE}")
+        
+        set +e
+        "${PROJECT_ROOT}/scripts/task_20_data_validation_and_configuration.sh" "${DATA_VALIDATION_ARGS[@]}"
+        DATA_VALIDATION_EXIT_CODE=$?
+        set -e
+        
+        if [ ${DATA_VALIDATION_EXIT_CODE} -ne 0 ]; then
+            echo "WARNING: Data validation failed or skipped (exit code: ${DATA_VALIDATION_EXIT_CODE})"
+            echo "This may be expected if datasets are not yet downloaded or paths are incorrect"
+            echo "Continuing with training setup..."
+        fi
     fi
     
     echo ""
